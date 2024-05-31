@@ -38,7 +38,6 @@ import java.util.List;
 @RequestMapping("video")
 public class ServerController {
 
-    private final RecordService recordService;
     private final ServerService serverService;
 
     @Autowired(required = false)
@@ -59,64 +58,6 @@ public class ServerController {
         }
     }
 
-    @PostMapping("analysis")
-    public JSONObject analysis(@RequestBody UrlReq req) {
-        JSONObject res = new JSONObject();
-        res.put("code", 222);
-        if (StringUtils.isBlank(req.getUrl())) {
-            res.put("msg", "解析地址为空");
-        } else {
-            try {
-                String cmd = "you-get -x 127.0.0.1:7890 -i " + req.getUrl();
-                // 执行命令
-                Process process = Runtime.getRuntime().exec(cmd);
-
-                // 读取命令执行结果
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                StringBuilder output = new StringBuilder();
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-                log.info("打印命令执行结果 {}", output.toString());
-                int exitVal = process.waitFor();
-                log.info("获取命令执行返回值 {}", exitVal);
-            } catch (IOException | InterruptedException e) {
-                log.error("解析地址失败", e);
-                res.put("msg", "解析地址失败");
-            }
-        }
-        return res;
-    }
-
-    @PostMapping("repeat")
-    public JSONObject repeat(@RequestBody UrlReq req) {
-        JSONObject res = new JSONObject();
-        res.put("code", 222);
-        if (StringUtils.isBlank(req.getFileName())) {
-            res.put("msg", "名称为空");
-            return res;
-        }
-        if (StringUtils.isBlank(req.getAuthor())) {
-            res.put("msg", "作者为空");
-            return res;
-        }
-        req.setFileName(req.getFileName().trim());
-
-        List<String> list = recordService.findQualityByAuthorAndName(req.getAuthor(), req.getFileName());
-        if (list.size() > 0) {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("已有");
-            for (String record : list) {
-                stringBuilder.append(" ").append(record);
-            }
-            stringBuilder.append(" 任务");
-            res.put("msg", stringBuilder.toString());
-            return res;
-        }
-        res.put("code", 200);
-        return res;
-    }
 
 
     @PostMapping("saveEs")

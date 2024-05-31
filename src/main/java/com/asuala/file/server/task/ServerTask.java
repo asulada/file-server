@@ -25,26 +25,6 @@ import java.util.List;
 @ConditionalOnProperty(prefix = "file", name = "server.open", havingValue = "true")
 public class ServerTask {
 
-    private final RecordPageService recordPageService;
-    private final IndexService indexService;
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    @Scheduled(cron = "0 0 1 * * ?")
-    public void deleteComplete() {
-        recordPageService.deleteComplete();
-    }
-
-    @Scheduled(cron = "0 0/30 * * * ?")
-    public void checkIndex() {
-        LocalDateTime now = LocalDateTime.now();
-        List<Index> list = indexService.list(new LambdaQueryWrapper<Index>().ge(Index::getUpdateTime, now.minusMinutes(40).format(formatter)));
-        if (list.size() > 0) {
-            MainConstant.index = Math.toIntExact(list.get(0).getId());
-            log.debug("客户端信息 {}", MainConstant.index);
-        } else {
-            log.error("没有取到存活的客户端信息 !!!");
-        }
-    }
 
 }

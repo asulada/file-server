@@ -91,19 +91,20 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         Index index = CPUUtils.getCpuId();
+        addIndex(index);
         MainConstant.systemInfo = index;
         if (watchOpen) {
             openWatch(index);
         }
         if (server) {
-            LocalDateTime now = LocalDateTime.now();
-            List<Index> list = indexService.list(new LambdaQueryWrapper<Index>().ge(Index::getUpdateTime, now.minusMinutes(40).format(formatter)));
-            if (list.size() > 0) {
-                MainConstant.index = Math.toIntExact(list.get(0).getId());
-                log.debug("客户端信息 {}", MainConstant.index);
-            } else {
-                log.error("没有取到存活的客户端信息 !!!");
-            }
+//            LocalDateTime now = LocalDateTime.now();
+//            List<Index> list = indexService.list(new LambdaQueryWrapper<Index>().ge(Index::getUpdateTime, now.minusMinutes(40).format(formatter)));
+//            if (list.size() > 0) {
+//                MainConstant.index = Math.toIntExact(list.get(0).getId());
+//                log.debug("客户端信息 {}", MainConstant.index);
+//            } else {
+//                log.error("没有取到存活的客户端信息 !!!");
+//            }
 
             //计算文件搜索权限
             List<User> users = userMapper.selectList(new LambdaQueryWrapper<>());
@@ -124,7 +125,6 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     }
 
     private void openWatch(Index index) throws Exception {
-        addIndex(index);
         List<UPath> uPaths = uPathMapper.selectList(new LambdaQueryWrapper<UPath>().select(UPath::getPath, UPath::getIndex).eq(UPath::getIndex, index.getId()));
         if (uPaths.size() == 0) {
             return;
