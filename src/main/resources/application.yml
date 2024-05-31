@@ -1,0 +1,115 @@
+server:
+  port: 7082
+
+spring:
+  jackson:
+    # 全局json时间格式化
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  servlet:
+    multipart:
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+  datasource:
+    url: ${env.jdbc.url}/video?useSSL=false&rewriteBatchedStatements=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF8
+    username: ${env.jdbc.username}
+    password: ${env.jdbc.password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+#      # 设置是否自动提交事务，默认为true
+#      auto-commit: true
+#      # 设置用于测试连接的SQL查询语句
+      connection-test-query: SELECT 1
+#      # 设置获取数据库连接的超时时间，默认为30秒，单位是秒
+      connection-timeout: 30000
+#      # 设置连接在连接池中保持空闲的最长时间，默认为10分钟，单位是秒
+      idle-timeout: 30000
+#      # 设置连接在连接池中允许存在的最长时间，默认为30分钟，单位是秒
+      max-lifetime: 1800000
+#      # 设置连接池中允许的最大连接数，默认为10
+      maximum-pool-size: 10
+#      # 设置连接池中保持的最小空闲连接数，默认为10
+      minimum-idle: 5
+#      # 设置连接池的名称，默认为"HikariPool-1"
+#      #      pool-name: agriculture
+#      # 设置连接验证的超时时间，默认为5秒，单位是秒
+      validation-timeout: 5000
+#mybatis plus
+mybatis-plus:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  #实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: com.yun.admin.entity
+  check-config-location: true
+  configuration:
+    #是否开启自动驼峰命名规则（camel case）映射
+    map-underscore-to-camel-case: true
+    #全局地开启或关闭配置文件中的所有映射器已经配置的任何缓存
+    cache-enabled: false
+    #sql打印
+    #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    call-setters-on-nulls: true
+    #配置JdbcTypeForNull, oracle数据库必须配置
+    jdbc-type-for-null: 'null'
+    #MyBatis 自动映射时未知列或未知属性处理策略 NONE：不做任何处理 (默认值), WARNING：以日志的形式打印相关警告信息, FAILING：当作映射失败处理，并抛出异常和详细信息
+    auto-mapping-unknown-column-behavior: warning
+    # 单个SQL执行超时时间(含insert,delete,select)，一般应用不宜过长，单位秒
+    default-statement-timeout: 120
+  global-config:
+    banner: false
+    db-config:
+      #主键类型  0:"数据库ID自增", 1:"未设置主键类型",2:"用户输入ID (该类型可以通过自己注册自动填充插件进行填充)", 3:"全局唯一ID (idWorker), 4:全局唯一ID (UUID), 5:字符串全局唯一ID (idWorker 的字符串表示)";
+      id-type: AUTO
+      #字段验证策略 IGNORED:"忽略判断", NOT_NULL:"非NULL判断", NOT_EMPTY:"非空判断", DEFAULT 默认的,一般只用于注解里(1. 在全局里代表 NOT_NULL,2. 在注解里代表 跟随全局)
+      field-strategy: NOT_NULL
+      #数据库大写下划线转换
+      capital-mode: false
+      # 全局逻辑删除的实体字段名
+      logic-delete-field: delFlag
+      #逻辑删除值
+      logic-delete-value: 1
+      #逻辑未删除值
+      logic-not-delete-value: 0
+logging:
+  config: config/log4j2.xml
+
+file:
+  server:
+    open: true
+    http:
+      salt: ${env.down.http.salt}
+      addUrl: ${env.down.http.url}/saveEs
+      delUrl: ${env.down.http.url}/delEs
+      rebuildUrl: ${env.down.http.url}/rebuildData
+
+search:
+  urlOptions: ${env.search.urlOptions}
+
+watch:
+  open: false
+  rebuldFlag: true
+  deleteLimit: 2000000
+  exclude: node_modules
+
+es:
+  port: ${env.es.port}
+  hostname: ${env.es.hostname}
+  alals: true  # 是否使用别名的方式访问
+  indexPrefix: index-
+  aliasPrefix: alias-
+
+############## Sa-Token 配置 (文档: https://sa-token.cc) ##############
+sa-token:
+  # token 名称（同时也是 cookie 名称）
+  token-name: satoken
+  # token 有效期（单位：秒） 默认30天，-1 代表永久有效
+  timeout: 43200
+  # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
+  active-timeout: -1
+  # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个 token （为 true 时所有登录共用一个 token, 为 false 时每次登录新建一个 token）
+  is-share: true
+  # token 风格（默认可取值：uuid、simple-uuid、random-32、random-64、random-128、tik）
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: true

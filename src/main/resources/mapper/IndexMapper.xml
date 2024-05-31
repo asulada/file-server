@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.asuala.file.server.mapper.IndexMapper">
+  <resultMap id="BaseResultMap" type="com.asuala.file.server.vo.Index">
+    <!--@mbg.generated-->
+    <!--@Table `index`-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="cpu_id" jdbcType="VARCHAR" property="cpuId" />
+    <result column="system" jdbcType="VARCHAR" property="system" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="del_flag" jdbcType="TINYINT" property="delFlag" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    id, cpu_id, `system`, create_time, update_time, del_flag
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <!--@mbg.generated-->
+    select
+    <include refid="Base_Column_List" />
+    from `index`
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <!--@mbg.generated-->
+    delete from `index`
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.Index" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into `index`
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="cpuId != null">
+        cpu_id,
+      </if>
+      <if test="system != null">
+        `system`,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="delFlag != null">
+        del_flag,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="cpuId != null">
+        #{cpuId,jdbcType=VARCHAR},
+      </if>
+      <if test="system != null">
+        #{system,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="delFlag != null">
+        #{delFlag,jdbcType=TINYINT},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.asuala.file.server.vo.Index">
+    <!--@mbg.generated-->
+    update `index`
+    <set>
+      <if test="cpuId != null">
+        cpu_id = #{cpuId,jdbcType=VARCHAR},
+      </if>
+      <if test="system != null">
+        `system` = #{system,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="delFlag != null">
+        del_flag = #{delFlag,jdbcType=TINYINT},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.asuala.file.server.vo.Index">
+    <!--@mbg.generated-->
+    update `index`
+    set cpu_id = #{cpuId,jdbcType=VARCHAR},
+    `system` = #{system,jdbcType=VARCHAR},
+    create_time = #{createTime,jdbcType=TIMESTAMP},
+    update_time = #{updateTime,jdbcType=TIMESTAMP},
+    del_flag = #{delFlag,jdbcType=TINYINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateBatch" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update `index`
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="cpu_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.cpuId,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+      <trim prefix="`system` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.system,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+      <trim prefix="create_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.createTime,jdbcType=TIMESTAMP}
+        </foreach>
+      </trim>
+      <trim prefix="update_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.updateTime,jdbcType=TIMESTAMP}
+        </foreach>
+      </trim>
+      <trim prefix="del_flag = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.delFlag,jdbcType=TINYINT}
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <update id="updateBatchSelective" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update `index`
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="cpu_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.cpuId != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.cpuId,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="`system` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.system != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.system,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="create_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.createTime != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.createTime,jdbcType=TIMESTAMP}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="update_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.updateTime != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.updateTime,jdbcType=TIMESTAMP}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="del_flag = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.delFlag != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.delFlag,jdbcType=TINYINT}
+          </if>
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into `index`
+    (cpu_id, `system`, create_time, update_time, del_flag)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.cpuId,jdbcType=VARCHAR}, #{item.system,jdbcType=VARCHAR}, #{item.createTime,jdbcType=TIMESTAMP},
+      #{item.updateTime,jdbcType=TIMESTAMP}, #{item.delFlag,jdbcType=TINYINT})
+    </foreach>
+  </insert>
+
+
+  <select id="findByCpuId" resultMap="BaseResultMap">
+    select     <include refid="Base_Column_List" /> from `index` where cpu_id=#{cpuId}
+  </select>
+
+<!--auto generated by MybatisCodeHelper on 2024-01-26-->
+  <update id="updateUpdateTimeById">
+    update `index`
+    set update_time=#{updatedUpdateTime,jdbcType=TIMESTAMP}
+    where id=#{id,jdbcType=BIGINT}
+  </update>
+</mapper>

@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.asuala.file.server.mapper.ChannelDetailsMapper">
+  <resultMap id="BaseResultMap" type="com.asuala.file.server.vo.ChannelDetails">
+    <!--@mbg.generated-->
+    <!--@Table channel_details-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="p_id" jdbcType="BIGINT" property="pId" />
+    <result column="url" jdbcType="VARCHAR" property="url" />
+    <result column="pic_url" jdbcType="VARCHAR" property="picUrl" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="author" jdbcType="VARCHAR" property="author" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="state" jdbcType="TINYINT" property="state" />
+    <result column="r_id" jdbcType="BIGINT" property="rId" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    id, p_id, url, pic_url, `name`, author, create_time, update_time, `state`, r_id
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <!--@mbg.generated-->
+    select
+    <include refid="Base_Column_List" />
+    from channel_details
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <!--@mbg.generated-->
+    delete from channel_details
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.ChannelDetails" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into channel_details
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="pId != null">
+        p_id,
+      </if>
+      <if test="url != null">
+        url,
+      </if>
+      <if test="picUrl != null">
+        pic_url,
+      </if>
+      <if test="name != null">
+        `name`,
+      </if>
+      <if test="author != null">
+        author,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="state != null">
+        `state`,
+      </if>
+      <if test="rId != null">
+        r_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="pId != null">
+        #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="url != null">
+        #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="picUrl != null">
+        #{picUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="author != null">
+        #{author,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="state != null">
+        #{state,jdbcType=TINYINT},
+      </if>
+      <if test="rId != null">
+        #{rId,jdbcType=BIGINT},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.asuala.file.server.vo.ChannelDetails">
+    <!--@mbg.generated-->
+    update channel_details
+    <set>
+      <if test="pId != null">
+        p_id = #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="url != null">
+        url = #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="picUrl != null">
+        pic_url = #{picUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="name != null">
+        `name` = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="author != null">
+        author = #{author,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="state != null">
+        `state` = #{state,jdbcType=TINYINT},
+      </if>
+      <if test="rId != null">
+        r_id = #{rId,jdbcType=BIGINT},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.asuala.file.server.vo.ChannelDetails">
+    <!--@mbg.generated-->
+    update channel_details
+    set p_id = #{pId,jdbcType=BIGINT},
+    url = #{url,jdbcType=VARCHAR},
+    pic_url = #{picUrl,jdbcType=VARCHAR},
+    `name` = #{name,jdbcType=VARCHAR},
+    author = #{author,jdbcType=VARCHAR},
+    create_time = #{createTime,jdbcType=TIMESTAMP},
+    update_time = #{updateTime,jdbcType=TIMESTAMP},
+    `state` = #{state,jdbcType=TINYINT},
+    r_id = #{rId,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateBatch" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update channel_details
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="p_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.pId,jdbcType=BIGINT}
+        </foreach>
+      </trim>
+      <trim prefix="url = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.url,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+      <trim prefix="pic_url = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.picUrl,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+      <trim prefix="`name` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.name,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+      <trim prefix="author = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.author,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+      <trim prefix="create_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.createTime,jdbcType=TIMESTAMP}
+        </foreach>
+      </trim>
+      <trim prefix="update_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.updateTime,jdbcType=TIMESTAMP}
+        </foreach>
+      </trim>
+      <trim prefix="`state` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.state,jdbcType=TINYINT}
+        </foreach>
+      </trim>
+      <trim prefix="r_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.rId,jdbcType=BIGINT}
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <update id="updateBatchSelective" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update channel_details
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="p_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.pId != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.pId,jdbcType=BIGINT}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="url = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.url != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.url,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="pic_url = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.picUrl != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.picUrl,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="`name` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.name != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.name,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="author = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.author != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.author,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="create_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.createTime != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.createTime,jdbcType=TIMESTAMP}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="update_time = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.updateTime != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.updateTime,jdbcType=TIMESTAMP}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="`state` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.state != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.state,jdbcType=TINYINT}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="r_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.rId != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.rId,jdbcType=BIGINT}
+          </if>
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into channel_details
+    (p_id, url, pic_url, `name`, author, create_time, update_time, `state`, r_id)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.pId,jdbcType=BIGINT}, #{item.url,jdbcType=VARCHAR}, #{item.picUrl,jdbcType=VARCHAR},
+      #{item.name,jdbcType=VARCHAR}, #{item.author,jdbcType=VARCHAR}, #{item.createTime,jdbcType=TIMESTAMP},
+      #{item.updateTime,jdbcType=TIMESTAMP}, #{item.state,jdbcType=TINYINT}, #{item.rId,jdbcType=BIGINT}
+      )
+    </foreach>
+  </insert>
+</mapper>

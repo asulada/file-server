@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.asuala.file.server.mapper.RecordPageMapper">
+  <resultMap id="BaseResultMap" type="com.asuala.file.server.vo.RecordPage">
+    <!--@mbg.generated-->
+    <!--@Table record_page-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="p_id" jdbcType="BIGINT" property="pId" />
+    <result column="num" jdbcType="INTEGER" property="num" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    id, p_id, num, `name`
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <!--@mbg.generated-->
+    select 
+    <include refid="Base_Column_List" />
+    from record_page
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <!--@mbg.generated-->
+    delete from record_page
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.RecordPage" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into record_page
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="pId != null">
+        p_id,
+      </if>
+      <if test="num != null">
+        num,
+      </if>
+      <if test="name != null">
+        `name`,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="pId != null">
+        #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="num != null">
+        #{num,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.asuala.file.server.vo.RecordPage">
+    <!--@mbg.generated-->
+    update record_page
+    <set>
+      <if test="pId != null">
+        p_id = #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="num != null">
+        num = #{num,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        `name` = #{name,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.asuala.file.server.vo.RecordPage">
+    <!--@mbg.generated-->
+    update record_page
+    set p_id = #{pId,jdbcType=BIGINT},
+      num = #{num,jdbcType=INTEGER},
+      `name` = #{name,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateBatch" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update record_page
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="p_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.pId,jdbcType=BIGINT}
+        </foreach>
+      </trim>
+      <trim prefix="num = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.num,jdbcType=INTEGER}
+        </foreach>
+      </trim>
+      <trim prefix="`name` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.name,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <update id="updateBatchSelective" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update record_page
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="p_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.pId != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.pId,jdbcType=BIGINT}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="num = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.num != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.num,jdbcType=INTEGER}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="`name` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.name != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.name,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into record_page
+    (p_id, num, `name`)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.pId,jdbcType=BIGINT}, #{item.num,jdbcType=INTEGER}, #{item.name,jdbcType=VARCHAR}
+        )
+    </foreach>
+  </insert>
+
+  <delete id="deleteComplete">
+    DELETE a FROM record_page a WHERE EXISTS (SELECT b.id FROM record b WHERE a.p_id=b.id and b.state=1)
+  </delete>
+</mapper>

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.asuala.file.server.mapper.ChannelRepeatMapper">
+  <resultMap id="BaseResultMap" type="com.asuala.file.server.vo.ChannelRepeat">
+    <!--@mbg.generated-->
+    <!--@Table channel_repeat-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="detail_id" jdbcType="BIGINT" property="detailId" />
+    <result column="f_id" jdbcType="BIGINT" property="fId" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="path" jdbcType="VARCHAR" property="path" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    id, detail_id, f_id, `name`, `path`
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <!--@mbg.generated-->
+    select 
+    <include refid="Base_Column_List" />
+    from channel_repeat
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <!--@mbg.generated-->
+    delete from channel_repeat
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.ChannelRepeat" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into channel_repeat
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="detailId != null">
+        detail_id,
+      </if>
+      <if test="fId != null">
+        f_id,
+      </if>
+      <if test="name != null">
+        `name`,
+      </if>
+      <if test="path != null">
+        `path`,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="detailId != null">
+        #{detailId,jdbcType=BIGINT},
+      </if>
+      <if test="fId != null">
+        #{fId,jdbcType=BIGINT},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        #{path,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.asuala.file.server.vo.ChannelRepeat">
+    <!--@mbg.generated-->
+    update channel_repeat
+    <set>
+      <if test="detailId != null">
+        detail_id = #{detailId,jdbcType=BIGINT},
+      </if>
+      <if test="fId != null">
+        f_id = #{fId,jdbcType=BIGINT},
+      </if>
+      <if test="name != null">
+        `name` = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        `path` = #{path,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.asuala.file.server.vo.ChannelRepeat">
+    <!--@mbg.generated-->
+    update channel_repeat
+    set detail_id = #{detailId,jdbcType=BIGINT},
+      f_id = #{fId,jdbcType=BIGINT},
+      `name` = #{name,jdbcType=VARCHAR},
+      `path` = #{path,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateBatch" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update channel_repeat
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="detail_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.detailId,jdbcType=BIGINT}
+        </foreach>
+      </trim>
+      <trim prefix="f_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.fId,jdbcType=BIGINT}
+        </foreach>
+      </trim>
+      <trim prefix="`name` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.name,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+      <trim prefix="`path` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          when id = #{item.id,jdbcType=BIGINT} then #{item.path,jdbcType=VARCHAR}
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <update id="updateBatchSelective" parameterType="java.util.List">
+    <!--@mbg.generated-->
+    update channel_repeat
+    <trim prefix="set" suffixOverrides=",">
+      <trim prefix="detail_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.detailId != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.detailId,jdbcType=BIGINT}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="f_id = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.fId != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.fId,jdbcType=BIGINT}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="`name` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.name != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.name,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+      <trim prefix="`path` = case" suffix="end,">
+        <foreach collection="list" index="index" item="item">
+          <if test="item.path != null">
+            when id = #{item.id,jdbcType=BIGINT} then #{item.path,jdbcType=VARCHAR}
+          </if>
+        </foreach>
+      </trim>
+    </trim>
+    where id in
+    <foreach close=")" collection="list" item="item" open="(" separator=", ">
+      #{item.id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into channel_repeat
+    (detail_id, f_id, `name`, `path`)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.detailId,jdbcType=BIGINT}, #{item.fId,jdbcType=BIGINT}, #{item.name,jdbcType=VARCHAR}, 
+        #{item.path,jdbcType=VARCHAR})
+    </foreach>
+  </insert>
+</mapper>

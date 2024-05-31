@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.asuala.file.server.mapper.FileInfoMapper">
+  <resultMap id="BaseResultMap" type="com.asuala.file.server.vo.FileInfo">
+    <!--@mbg.generated-->
+    <!--@Table file_info-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="path" jdbcType="VARCHAR" property="path" />
+    <result column="suffix" jdbcType="VARCHAR" property="suffix" />
+    <result column="size" jdbcType="BIGINT" property="size" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="dir" jdbcType="TINYINT" property="dir" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="change_time" jdbcType="TIMESTAMP" property="changeTime" />
+    <result column="index" jdbcType="TINYINT" property="index" />
+    <result column="u_id" jdbcType="BIGINT" property="uId" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    id, `name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`, 
+    u_id
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <!--@mbg.generated-->
+    select 
+    <include refid="Base_Column_List" />
+    from file_info
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <!--@mbg.generated-->
+    delete from file_info
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.FileInfo" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into file_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        `name`,
+      </if>
+      <if test="path != null">
+        `path`,
+      </if>
+      <if test="suffix != null">
+        suffix,
+      </if>
+      <if test="size != null">
+        `size`,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="dir != null">
+        dir,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="changeTime != null">
+        change_time,
+      </if>
+      <if test="index != null">
+        `index`,
+      </if>
+      <if test="uId != null">
+        u_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="suffix != null">
+        #{suffix,jdbcType=VARCHAR},
+      </if>
+      <if test="size != null">
+        #{size,jdbcType=BIGINT},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="dir != null">
+        #{dir,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="changeTime != null">
+        #{changeTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="index != null">
+        #{index,jdbcType=TINYINT},
+      </if>
+      <if test="uId != null">
+        #{uId,jdbcType=BIGINT},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.asuala.file.server.vo.FileInfo">
+    <!--@mbg.generated-->
+    update file_info
+    <set>
+      <if test="name != null">
+        `name` = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        `path` = #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="suffix != null">
+        suffix = #{suffix,jdbcType=VARCHAR},
+      </if>
+      <if test="size != null">
+        `size` = #{size,jdbcType=BIGINT},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="dir != null">
+        dir = #{dir,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="changeTime != null">
+        change_time = #{changeTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="index != null">
+        `index` = #{index,jdbcType=TINYINT},
+      </if>
+      <if test="uId != null">
+        u_id = #{uId,jdbcType=BIGINT},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.asuala.file.server.vo.FileInfo">
+    <!--@mbg.generated-->
+    update file_info
+    set `name` = #{name,jdbcType=VARCHAR},
+      `path` = #{path,jdbcType=VARCHAR},
+      suffix = #{suffix,jdbcType=VARCHAR},
+      `size` = #{size,jdbcType=BIGINT},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      dir = #{dir,jdbcType=TINYINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      change_time = #{changeTime,jdbcType=TIMESTAMP},
+      `index` = #{index,jdbcType=TINYINT},
+      u_id = #{uId,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into file_info
+    (`name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`, 
+      u_id)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.name,jdbcType=VARCHAR}, #{item.path,jdbcType=VARCHAR}, #{item.suffix,jdbcType=VARCHAR}, 
+        #{item.size,jdbcType=BIGINT}, #{item.updateTime,jdbcType=TIMESTAMP}, #{item.dir,jdbcType=TINYINT}, 
+        #{item.createTime,jdbcType=TIMESTAMP}, #{item.changeTime,jdbcType=TIMESTAMP}, #{item.index,jdbcType=TINYINT}, 
+        #{item.uId,jdbcType=BIGINT})
+    </foreach>
+  </insert>
+
+<!--auto generated by MybatisCodeHelper on 2024-02-01-->
+  <select id="findNameByIndex" resultType="map">
+
+    SELECT name,GROUP_CONCAT(id separator ';') id,GROUP_CONCAT(path separator ';') path FROM `file_info` WHERE `index`=#{index,jdbcType=TINYINT} GROUP BY name HAVING count(1)&gt;1
+
+  </select>
+
+  <delete id="deleteLimit">
+    delete FROM file_info where `index`=#{index} limit 50000
+  </delete>
+
+
+  <update id="dropTable">
+    DROP TABLE IF EXISTS file_info
+  </update>
+
+  <update id="dropIndex" parameterType="map">
+    -- RENAME TABLE file_info TO file_info_old, New TO Main;
+    RENAME TABLE file_info TO file_info_old;
+    CREATE TABLE `file_info` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '名称',
+    `path` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '路径',
+    `suffix` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '后缀名',
+    `size` bigint unsigned DEFAULT NULL COMMENT '大小',
+    `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+    `dir` tinyint DEFAULT NULL COMMENT '0 文件 1 文件夹 ',
+    `create_time` datetime DEFAULT NULL,
+    `change_time` datetime DEFAULT NULL COMMENT '文件修改时间',
+    `index` tinyint unsigned DEFAULT NULL,
+    `u_id` bigint unsigned DEFAULT '0' COMMENT '归属id',
+    PRIMARY KEY (`id`),
+    KEY `INDEX_NAME` (`name`) USING BTREE,
+    KEY `INDEX_CHANGETIME` (`change_time`) USING BTREE,
+    KEY `INDEX_U_ID` (`u_id`) USING BTREE
+    ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文件信息';
+    INSERT INTO file_info (`name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`) SELECT `name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index` FROM file_info_old  WHERE`index`!=#{index};
+    DROP TABLE file_info_old;
+  </update>
+
+</mapper>

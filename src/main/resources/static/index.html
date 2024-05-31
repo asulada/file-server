@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"/>
+    <!--引入 element-ui 的样式，-->
+    <link rel="stylesheet" href="https://cdn.swagger.vip/css/element-ui-2.15.10.css">
+    <!-- 必须先引入vue，  后使用element-ui -->
+    <script src="https://cdn.swagger.vip/js/vue-2.7.10.js"></script>
+    <!-- 引入element 的组件库-->
+    <script src="https://cdn.swagger.vip/js/element-ui-2.15.10.js"></script>
+    <script src="https://cdn.swagger.vip/js/axios.min.js"></script>
+    <style>
+        body, html {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+    </style>
+
+</head>
+<body style="display: flex;
+    justify-content: center;">
+<div id="app" style="width: 70%;margin-top: 14px;">
+    <template>
+        <div v-loading="loading" style="height: 100%">
+            <el-container>
+                <el-header style="height: unset">
+                    <el-form :model="listQuery" class="demo-form-inline" @submit.native.prevent label-width="80px">
+                        <el-form-item label="文件名">
+                            <el-col :span="18">
+
+                                <el-input v-model="listQuery.key" placeholder="文件名" @keyup.enter.native="handleSearch"
+                                          clearable></el-input>
+                            </el-col>
+                            <el-col :span="4">
+
+                                <el-button style="float:right" type="primary" @click="handleSearch">查询</el-button>
+                            </el-col>
+                        </el-form-item>
+
+                        <el-form-item label="地址">
+                            <el-radio-group v-model="radio" @change="skipChange">
+                                <el-radio label="0">互联网</el-radio>
+                                <el-radio label="1">加密内网</el-radio>
+                                <el-radio label="2">内网</el-radio>
+                            </el-radio-group>
+
+                            <el-button style="margin-left: 20px" type="danger" @click="clearAllCookies">退出</el-button>
+
+                        </el-form-item>
+                    </el-form>
+                </el-header>
+                <el-main>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%">
+                        <el-table-column
+                                prop="name"
+                                label="名称"
+                                width="180">
+                            <template slot-scope="scope">
+                                <el-link :underline="false" @click="skip(scope.row)"><span
+                                        v-html="scope.row.name"></span></el-link>
+                            </template>
+                        </el-table-column>
+                        <el-table-column
+                                prop="dir"
+                                label="类型"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="path"
+                                label="路径"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="changeTime"
+                                label="时间">
+                        </el-table-column>
+                        <el-table-column
+                                prop="size"
+                                label="大小">
+                        </el-table-column>
+                        <el-table-column
+                                prop="index"
+                                label="设备">
+                        </el-table-column>
+                    </el-table>
+                </el-main>
+            </el-container>
+
+            <div class="pagination-container" style="margin-top:16px;text-align:right;">
+                <el-pagination
+                        background
+                        layout="total, sizes,prev, pager, next,jumper"
+                        :page-size="listQuery.pageSize"
+                        :page-sizes="[10,20,50,100]"
+                        :pager-count="5"
+                        :current-page.sync="listQuery.pageNum"
+                        :total="total"
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                />
+            </div>
+
+            <el-dialog
+                    title="登录"
+                    :visible.sync="dialogVisible"
+                    width="30%"
+                    :before-close="handleClose"
+                    v-loading="loginLoading"
+            >
+                <el-form :model="loginData" label-width="50px" @submit.native.prevent>
+                    <el-form-item label="账号">
+                        <el-input v-model="loginData.name" placeholder="账号" clearable></el-input>
+                    </el-form-item>
+
+                    <el-form-item label="密码">
+                        <el-input v-model="loginData.password" show-password placeholder="密码"
+                                  @keyup.enter.native="login"></el-input>
+                    </el-form-item>
+                </el-form>
+                <span slot="footer" class="dialog-footer">
+    <el-button @click="handleClose">取 消</el-button>
+    <el-button type="primary" @click="login">确 定</el-button>
+  </span>
+            </el-dialog>
+        </div>
+    </template>
+</div>
+</body>
+
+<script type="text/javascript">
+    const defualtListQuery = {
+        pageNum: 1,
+        pageSize: 10,
+        key: null,
+    };
+    const defualtLogin = {
+        name: "",
+        password: "",
+    };
+    var v1 = new Vue({
+        el: "#app",
+        data: function () {
+            return {
+                radio: "0",
+                urlObj: null,
+                listQuery: Object.assign({}, defualtListQuery),
+                loginData: Object.assign({}, defualtLogin),
+                tableData: [],
+                total: null,
+                config_url: "",
+                skipUrl: "",
+                dialogVisible: false,
+                loading: false,
+                loginLoading: false,
+            }
+        },
+        created() {
+            this.getUrlOptions()
+        },
+        methods: {
+            login() {
+                if (this.loginData.name && this.loginData.password) {
+                    this.toggleLoginLoading()
+                    axios.post(this.config_url + "login", this.loginData).then(res => {
+                        this.toggleLoginLoading()
+                        if (res.data.code === 200) {
+                            this.getUrlOptions()
+                            this.handleClose()
+                        } else {
+                            this.$message.error(res.data.msg);
+                        }
+                    })
+                }
+            },
+            handleClose() {
+                this.dialogVisible = false
+                this.loginData = Object.assign({}, defualtLogin)
+            },
+            skipChange(val) {
+                this.skipUrl = this.urlObj[val]
+            },
+            skip(row) {
+                let path = row.path.replace("/mnt/", this.skipUrl)
+                window.open(path);
+            },
+            formatType(type) {
+                if (type === 1) {
+                    return '文件夹'
+                }
+                return '文件'
+            },
+            handleSearch(val) {
+                this.listQuery.pageNum = 1;
+                this.getList();
+            },
+            handleCurrentChange(val) {
+                window.scrollTo(0, 0);
+                this.listQuery.pageNum = val;
+                this.getList();
+            },
+            clearAllCookies() {
+                const cookies = document.cookie.split(';');
+
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i];
+                    const eqPos = cookie.indexOf('=');
+                    const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                    document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                }
+            },
+            handleSizeChange(val) {
+                window.scrollTo(0, 0);
+                this.listQuery.pageNum = 1;
+                this.listQuery.pageSize = val;
+                this.getList();
+            },
+            formatFileSize(sizeInBytes) {
+                if (sizeInBytes) {
+                    const units = ["B", "KB", "MB", "GB", "TB"];
+                    let unitIndex = 0;
+                    let fileSize = parseFloat(sizeInBytes);
+                    while (fileSize >= 1024 && unitIndex < units.length - 1) {
+                        fileSize /= 1024;
+                        unitIndex++;
+                    }
+                    const formattedSize = fileSize.toFixed(2);
+                    const unit = units[unitIndex];
+                    return `${formattedSize} ${unit}`;
+                }
+                return "";
+            },
+            toggleLoading() {
+                this.loading = !this.loading;
+                if (this.loading) {
+                    // 禁止页面滚动
+                    this.stopScroll();
+                } else {
+                    // 恢复页面滚动
+                    this.canScroll();
+                }
+            },
+            toggleLoginLoading() {
+                this.loginLoading = !this.loginLoading;
+                if (this.loginLoading) {
+                    // 禁止页面滚动
+                    this.stopScroll();
+                } else {
+                    // 恢复页面滚动
+                    this.canScroll();
+                }
+            },
+            stopScroll() {
+                document.body.style.overflow = 'hidden';
+                document.addEventListener('touchmove', this.preventDefault, { passive: false });
+            },
+            canScroll() {
+                document.body.style.overflow = '';
+                document.removeEventListener('touchmove', this.preventDefault);
+            },
+            preventDefault(e) {
+                e.preventDefault();
+            },
+            getList() {
+                this.toggleLoading()
+                axios.post(this.config_url + "search", this.listQuery).then(res => {
+                    this.toggleLoading()
+                    if (res.data.code === 11011 || res.data.code === 11012) {
+                        this.dialogVisible = true
+                        return
+                    }
+                    if (res.data.code === 200) {
+                        this.tableData = []
+                        let data = res.data.data
+                        this.total = data.total
+                        for (let i = 0; i < data.list.length; i++) {
+                            let size = data.list[i].size
+                            if (size > 0) {
+                                data.list[i].size = this.formatFileSize(data.list[i].size)
+                            }
+                            data.list[i].dir = this.formatType(data.list[i].dir)
+
+                            this.tableData = data.list
+                        }
+                    } else {
+                        this.$message.warning(res.data.msg);
+                    }
+                })
+            },
+            getUrlOptions() {
+                axios.get(this.config_url + "openUrl").then(res => {
+                    if (res.status === 200) {
+                        if (res.data.code === 11011 || res.data.code === 11012) {
+                            this.dialogVisible = true
+                            return
+                        }
+                        let data = res.data
+                        this.urlObj = data
+                        this.skipUrl = this.urlObj[this.radio]
+                    } else {
+                        this.$message.warning('获取地址失败');
+                    }
+
+                })
+            },
+        }
+    })
+</script>
+</html>

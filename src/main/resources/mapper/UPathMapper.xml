@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.asuala.file.server.mapper.UPathMapper">
+  <resultMap id="BaseResultMap" type="com.asuala.file.server.vo.UPath">
+    <!--@mbg.generated-->
+    <!--@Table u_path-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="u_id" jdbcType="BIGINT" property="uId" />
+    <result column="path" jdbcType="VARCHAR" property="path" />
+    <result column="s_id" jdbcType="BIGINT" property="sId" />
+    <result column="index" jdbcType="BIGINT" property="index" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    id, u_id, `path`, s_id, `index`
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <!--@mbg.generated-->
+    select 
+    <include refid="Base_Column_List" />
+    from u_path
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <!--@mbg.generated-->
+    delete from u_path
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.UPath" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into u_path
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="uId != null">
+        u_id,
+      </if>
+      <if test="path != null">
+        `path`,
+      </if>
+      <if test="sId != null">
+        s_id,
+      </if>
+      <if test="index != null">
+        `index`,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="uId != null">
+        #{uId,jdbcType=BIGINT},
+      </if>
+      <if test="path != null">
+        #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="sId != null">
+        #{sId,jdbcType=BIGINT},
+      </if>
+      <if test="index != null">
+        #{index,jdbcType=BIGINT},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.asuala.file.server.vo.UPath">
+    <!--@mbg.generated-->
+    update u_path
+    <set>
+      <if test="uId != null">
+        u_id = #{uId,jdbcType=BIGINT},
+      </if>
+      <if test="path != null">
+        `path` = #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="sId != null">
+        s_id = #{sId,jdbcType=BIGINT},
+      </if>
+      <if test="index != null">
+        `index` = #{index,jdbcType=BIGINT},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.asuala.file.server.vo.UPath">
+    <!--@mbg.generated-->
+    update u_path
+    set u_id = #{uId,jdbcType=BIGINT},
+      `path` = #{path,jdbcType=VARCHAR},
+      s_id = #{sId,jdbcType=BIGINT},
+      `index` = #{index,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into u_path
+    (u_id, `path`, s_id, `index`)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.uId,jdbcType=BIGINT}, #{item.path,jdbcType=VARCHAR}, #{item.sId,jdbcType=BIGINT}, 
+        #{item.index,jdbcType=BIGINT})
+    </foreach>
+  </insert>
+</mapper>

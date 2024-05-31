@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.asuala.file.server.mapper.RecordMapper">
+    <resultMap id="BaseResultMap" type="com.asuala.file.server.vo.Record">
+        <!--@mbg.generated-->
+        <!--@Table record-->
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="url" jdbcType="VARCHAR" property="url" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="state" jdbcType="TINYINT" property="state" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="quality" jdbcType="VARCHAR" property="quality" />
+        <result column="del_flag" jdbcType="TINYINT" property="delFlag" />
+        <result column="page_url" jdbcType="VARCHAR" property="pageUrl" />
+        <result column="author" jdbcType="VARCHAR" property="author" />
+        <result column="index" jdbcType="TINYINT" property="index" />
+        <result column="pic_url" jdbcType="VARCHAR" property="picUrl" />
+        <result column="fail_num" jdbcType="TINYINT" property="failNum" />
+        <result column="time_hum" jdbcType="VARCHAR" property="timeHum" />
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        id, `name`, url, create_time, `state`, update_time, quality, del_flag, page_url,
+        author, `index`, pic_url, fail_num, time_hum
+    </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        <!--@mbg.generated-->
+        select
+        <include refid="Base_Column_List" />
+        from record
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        <!--@mbg.generated-->
+        delete from record
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.Record" useGeneratedKeys="true">
+        <!--@mbg.generated-->
+        insert into record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null">
+                `name`,
+            </if>
+            <if test="url != null">
+                url,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="state != null">
+                `state`,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+            <if test="quality != null">
+                quality,
+            </if>
+            <if test="delFlag != null">
+                del_flag,
+            </if>
+            <if test="pageUrl != null">
+                page_url,
+            </if>
+            <if test="author != null">
+                author,
+            </if>
+            <if test="index != null">
+                `index`,
+            </if>
+            <if test="picUrl != null">
+                pic_url,
+            </if>
+            <if test="failNum != null">
+                fail_num,
+            </if>
+            <if test="timeHum != null">
+                time_hum,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null">
+                #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="url != null">
+                #{url,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="state != null">
+                #{state,jdbcType=TINYINT},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="quality != null">
+                #{quality,jdbcType=VARCHAR},
+            </if>
+            <if test="delFlag != null">
+                #{delFlag,jdbcType=TINYINT},
+            </if>
+            <if test="pageUrl != null">
+                #{pageUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="author != null">
+                #{author,jdbcType=VARCHAR},
+            </if>
+            <if test="index != null">
+                #{index,jdbcType=TINYINT},
+            </if>
+            <if test="picUrl != null">
+                #{picUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="failNum != null">
+                #{failNum,jdbcType=TINYINT},
+            </if>
+            <if test="timeHum != null">
+                #{timeHum,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.asuala.file.server.vo.Record">
+        <!--@mbg.generated-->
+        update record
+        <set>
+            <if test="name != null">
+                `name` = #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="url != null">
+                url = #{url,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="state != null">
+                `state` = #{state,jdbcType=TINYINT},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="quality != null">
+                quality = #{quality,jdbcType=VARCHAR},
+            </if>
+            <if test="delFlag != null">
+                del_flag = #{delFlag,jdbcType=TINYINT},
+            </if>
+            <if test="pageUrl != null">
+                page_url = #{pageUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="author != null">
+                author = #{author,jdbcType=VARCHAR},
+            </if>
+            <if test="index != null">
+                `index` = #{index,jdbcType=TINYINT},
+            </if>
+            <if test="picUrl != null">
+                pic_url = #{picUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="failNum != null">
+                fail_num = #{failNum,jdbcType=TINYINT},
+            </if>
+            <if test="timeHum != null">
+                time_hum = #{timeHum,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.asuala.file.server.vo.Record">
+        <!--@mbg.generated-->
+        update record
+        set `name` = #{name,jdbcType=VARCHAR},
+        url = #{url,jdbcType=VARCHAR},
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+        `state` = #{state,jdbcType=TINYINT},
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+        quality = #{quality,jdbcType=VARCHAR},
+        del_flag = #{delFlag,jdbcType=TINYINT},
+        page_url = #{pageUrl,jdbcType=VARCHAR},
+        author = #{author,jdbcType=VARCHAR},
+        `index` = #{index,jdbcType=TINYINT},
+        pic_url = #{picUrl,jdbcType=VARCHAR},
+        fail_num = #{failNum,jdbcType=TINYINT},
+        time_hum = #{timeHum,jdbcType=VARCHAR}
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+    <update id="updateBatch" parameterType="java.util.List">
+        <!--@mbg.generated-->
+        update record
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="`name` = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.name,jdbcType=VARCHAR}
+                </foreach>
+            </trim>
+            <trim prefix="url = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.url,jdbcType=VARCHAR}
+                </foreach>
+            </trim>
+            <trim prefix="create_time = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.createTime,jdbcType=TIMESTAMP}
+                </foreach>
+            </trim>
+            <trim prefix="`state` = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.state,jdbcType=TINYINT}
+                </foreach>
+            </trim>
+            <trim prefix="update_time = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.updateTime,jdbcType=TIMESTAMP}
+                </foreach>
+            </trim>
+            <trim prefix="quality = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.quality,jdbcType=VARCHAR}
+                </foreach>
+            </trim>
+            <trim prefix="del_flag = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.delFlag,jdbcType=TINYINT}
+                </foreach>
+            </trim>
+            <trim prefix="page_url = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.pageUrl,jdbcType=VARCHAR}
+                </foreach>
+            </trim>
+            <trim prefix="author = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.author,jdbcType=VARCHAR}
+                </foreach>
+            </trim>
+            <trim prefix="`index` = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.index,jdbcType=TINYINT}
+                </foreach>
+            </trim>
+            <trim prefix="pic_url = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.picUrl,jdbcType=VARCHAR}
+                </foreach>
+            </trim>
+            <trim prefix="fail_num = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.failNum,jdbcType=TINYINT}
+                </foreach>
+            </trim>
+            <trim prefix="time_hum = case" suffix="end,">
+                <foreach collection="list" index="index" item="item">
+                    when id = #{item.id,jdbcType=BIGINT} then #{item.timeHum,jdbcType=VARCHAR}
+                </foreach>
+            </trim>
+        </trim>
+        where id in
+        <foreach close=")" collection="list" item="item" open="(" separator=", ">
+            #{item.id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+    <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+        <!--@mbg.generated-->
+        insert into record
+        (`name`, url, create_time, `state`, update_time, quality, del_flag, page_url, author,
+        `index`, pic_url, fail_num, time_hum)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.name,jdbcType=VARCHAR}, #{item.url,jdbcType=VARCHAR}, #{item.createTime,jdbcType=TIMESTAMP},
+            #{item.state,jdbcType=TINYINT}, #{item.updateTime,jdbcType=TIMESTAMP}, #{item.quality,jdbcType=VARCHAR},
+            #{item.delFlag,jdbcType=TINYINT}, #{item.pageUrl,jdbcType=VARCHAR}, #{item.author,jdbcType=VARCHAR},
+            #{item.index,jdbcType=TINYINT}, #{item.picUrl,jdbcType=VARCHAR}, #{item.failNum,jdbcType=TINYINT},
+            #{item.timeHum,jdbcType=VARCHAR})
+        </foreach>
+    </insert>
+
+    <update id="updateDelAndTime">
+        update record
+        set del_flag=#{delFlag},
+            update_time=#{updateTime}
+        where id = #{id}
+    </update>
+
+    <select id="findLastSameFile" resultMap="BaseResultMap">
+        select id
+        from record
+        where name = #{fileName}
+          and author = #{author}
+          and quality = #{quality}
+          and del_flag = 1
+        order by id desc
+        limit 1
+    </select>
+
+    <select id="pagePageUrl" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from record
+        where id &gt; #{lastId}
+          and del_flag = 1
+          and page_url is not null
+          and page_url != ''
+          and `index` = #{index}
+    </select>
+
+    <!--auto generated by MybatisCodeHelper on 2024-02-04-->
+    <select id="findQualityByAuthorAndName" resultType="java.lang.String">
+        select quality
+        from record
+        where author = #{author,jdbcType=VARCHAR}
+          and `name` = #{name,jdbcType=VARCHAR}
+    </select>
+
+    <!--auto generated by MybatisCodeHelper on 2024-02-07-->
+    <select id="findIdByNameAndAuthor" resultType="java.lang.Long">
+        select id
+        from record
+        where `name` = #{name,jdbcType=VARCHAR}
+          and author = #{author,jdbcType=VARCHAR}
+        order by id desc
+        limit 1
+    </select>
+
+    <!--auto generated by MybatisCodeHelper on 2024-02-07-->
+    <select id="findIdGroupByNameAndAuthor" resultType="java.lang.String">
+        SELECT GROUP_CONCAT(id SEPARATOR ';') id,
+               author
+        FROM `record`
+
+        GROUP BY NAME, author
+        HAVING count(1) > 1
+    </select>
+
+    <!--auto generated by MybatisCodeHelper on 2024-02-07-->
+    <select id="findByIdAndState" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from record
+        where id >= #{id,jdbcType=BIGINT}
+          and `state` = #{state,jdbcType=TINYINT}
+    </select>
+
+    <!--auto generated by MybatisCodeHelper on 2024-02-07-->
+    <select id="countByNameAndAuthorAndIdNot" resultType="java.lang.Long">
+        select count(1)
+        from record
+        where `name` = #{name,jdbcType=VARCHAR}
+          and author = #{author,jdbcType=VARCHAR}
+          and id <![CDATA[<>]]>
+              #{notId,jdbcType=BIGINT}
+    </select>
+</mapper>
