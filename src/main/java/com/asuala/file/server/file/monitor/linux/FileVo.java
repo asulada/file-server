@@ -14,4 +14,6 @@ public class FileVo {
     private int code;
     private boolean isDir;
     private Long sId;
+
+    private Integer fd;
 }

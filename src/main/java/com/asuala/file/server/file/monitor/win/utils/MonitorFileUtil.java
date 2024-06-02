@@ -50,6 +50,7 @@ public class MonitorFileUtil {
             paths.add(stringBuilder.toString());
         }
         List<List<String>> split = CollectionUtil.split(paths, 5000);
+        Map<String, Long> dirMap = new HashMap<>();
         for (List<String> strings : split) {
             ThreadPoolExecutorUtils.getThreadPoolExecutorInstance().execute(() -> {
                 List<FileInfo> list = new ArrayList<>();
@@ -59,13 +60,20 @@ public class MonitorFileUtil {
                     FileInfo.FileInfoBuilder builder = FileInfo.builder().index(MainConstant.index).name(file.getName()).path(filePath).createTime(date).changeTime(new Date(file.lastModified())).uId(entryVolume.getValue());
                     if (file.isFile()) {
                         String suffix = FileUtils.getSuffix(file.getName());
-//                        if (suffix.length() > 20) {
-//                            log.warn("后缀名长度过长, 文件路径: {}", file.getAbsolutePath());
-//                            continue;
-//                        }
-                        builder.size(file.length()).suffix(suffix).dir(0);
+
+                        Long pId = dirMap.get(file.getParent());
+                        if (null == pId) {
+                            pId = MainConstant.snowflake.nextId();
+                            dirMap.put(file.getParent(), pId);
+                        }
+                        builder.size(file.length()).suffix(suffix).dir(0).dId(0L).pId(pId);
                     } else {
-                        builder.dir(1);
+                        Long dId = dirMap.get(filePath);
+                        if (null == dId) {
+                            dId = MainConstant.snowflake.nextId();
+                            dirMap.put(filePath, dId);
+                        }
+                        builder.dir(1).dId(dId).pId(0L);
                     }
                     list.add(builder.build());
                 }

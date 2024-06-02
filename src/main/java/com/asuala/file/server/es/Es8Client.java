@@ -343,7 +343,7 @@ public class Es8Client {
 
 
     // 批量添加
-    public <T> void addDatas(List<T> list, boolean async) {
+    public <T> void addData(List<T> list, boolean async) {
 
         BulkRequest.Builder br = new BulkRequest.Builder();
         for (T o : list) {
@@ -470,16 +470,22 @@ public class Es8Client {
     }
 
     //根据id进行删除
-    public <T> void delDocId(String docId, Class<T> clazz) throws IOException {
+    public <T> void delDocId(String docId, Class<T> clazz) {
         String index = getClassAlalsOrIndex(clazz);
         DeleteRequest de = DeleteRequest.of(d -> d.index(index).id(docId));
-        client.delete(de);
+        asyncClient.delete(de);
     }
 
     //根据查询进行删除
+    public <T> void delByIds(Query query, Class<T> clazz) {
+        String index = getClassAlalsOrIndex(clazz);
+        DeleteByQueryRequest de = DeleteByQueryRequest.of(d -> d.index(index).query(query));
+        asyncClient.deleteByQuery(de);
+    }
+
     public <T> void delQuery(Query query, Class<T> clazz) throws IOException {
         String index = getClassAlalsOrIndex(clazz);
-        DeleteByQueryRequest de = DeleteByQueryRequest.of(d -> d.index(index).query(query).timeout(Time.of(a -> a.time(TimeValue.timeValueMillis(5).toString()))));
+        DeleteByQueryRequest de = DeleteByQueryRequest.of(d -> d.index(index).query(query).timeout(Time.of(a -> a.time(TimeValue.timeValueMinutes(2).toString()))));
         client.deleteByQuery(de);
     }
 

@@ -14,12 +14,12 @@
         -->
 
         <!-- 忽略Elasticsearch客户端包的DEBUG日志 -->
-        <Logger name="org.elasticsearch.client" level="WARN" additivity="false">
-            <AppenderRef ref="debugFile"/>
-        </Logger>
-        <Logger name="org.apache.http" level="WARN" additivity="false">
-            <AppenderRef ref="debugFile"/>
-        </Logger>
+<!--        <Logger name="org.elasticsearch.client" level="WARN" additivity="false">-->
+<!--            <AppenderRef ref="debugFile"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.apache.http" level="WARN" additivity="false">-->
+<!--            <AppenderRef ref="debugFile"/>-->
+<!--        </Logger>-->
 
         <root level="debug">
             <appender-ref ref="spring6log" />

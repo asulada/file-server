@@ -1,6 +1,7 @@
 package com.asuala.file.server.file.monitor.win;
 
 import com.asuala.file.server.file.monitor.win.enums.FileChangeEventEnum;
+import com.asuala.file.server.service.EsService;
 import com.asuala.file.server.service.FileInfoService;
 import com.asuala.file.server.utils.FileUtils;
 import com.asuala.file.server.vo.FileInfo;
@@ -27,6 +28,7 @@ public class FileChangeListener implements FileMonitor.FileListener {
 
     private static FileInfo tmpFile;
 
+    private EsService esService;
 
     @Override
     public void fileChanged(FileMonitor.FileEvent e) {
@@ -51,7 +53,7 @@ public class FileChangeListener implements FileMonitor.FileListener {
                         fileInfo.setCreateTime(new Date(file.lastModified()));
                         fileInfo.setUpdateTime(new Date());
                         fileInfoService.updateById(fileInfo);
-                        fileInfoService.saveEs(fileInfo);
+                        esService.saveEs(fileInfo);
                     }
                 }
 //                    else {
@@ -72,7 +74,7 @@ public class FileChangeListener implements FileMonitor.FileListener {
                     tmpFile.setChangeTime(new Date(file.lastModified()));
                     tmpFile.setUpdateTime(new Date());
                     fileInfoService.updateById(tmpFile);
-                    fileInfoService.saveEs(tmpFile);
+                    esService.saveEs(tmpFile);
                 } else {
                     log.warn("{} 新名称事件-没有旧文件", file.getName());
                     fileInfoService.insert(file, uId);
@@ -90,7 +92,7 @@ public class FileChangeListener implements FileMonitor.FileListener {
                 fileInfo = fileInfoService.findFileInfo(file);
                 if (null != fileInfo) {
                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
-                    fileInfoService.delEs(fileInfo);
+                    esService.delEs(fileInfo);
                 }
                 break;
             default:

@@ -1,7 +1,14 @@
 package com.asuala.file.server;
 
 import cn.hutool.http.HttpGlobalConfig;
+import com.asuala.file.server.config.MainConstant;
+import com.asuala.file.server.service.EsHttpServcie;
+import com.asuala.file.server.service.EsLocalService;
+import com.asuala.file.server.service.EsService;
+import com.asuala.file.server.utils.CPUUtils;
+import com.asuala.file.server.vo.Index;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -20,7 +27,8 @@ import java.io.IOException;
 @EnableAsync
 @EnableAspectJAutoProxy
 public class MockApplication {
-
+    @Value("${file.server.open}")
+    private boolean server;
 
     public static void main(String[] args) throws IOException {
         HttpGlobalConfig.setTimeout(10000);
@@ -40,6 +48,13 @@ public class MockApplication {
         taskScheduler.setPoolSize(10);
         taskScheduler.initialize();
         return taskScheduler;
+    }
+    @Bean
+    public EsService esService() {
+        if (server) {
+            return new EsLocalService();
+        }
+        return new EsHttpServcie();
     }
 
 }

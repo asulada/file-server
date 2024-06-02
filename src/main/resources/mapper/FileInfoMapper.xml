@@ -15,15 +15,17 @@
     <result column="change_time" jdbcType="TIMESTAMP" property="changeTime" />
     <result column="index" jdbcType="TINYINT" property="index" />
     <result column="u_id" jdbcType="BIGINT" property="uId" />
+    <result column="p_id" jdbcType="BIGINT" property="pId" />
+    <result column="d_id" jdbcType="BIGINT" property="dId" />
   </resultMap>
   <sql id="Base_Column_List">
     <!--@mbg.generated-->
-    id, `name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`, 
-    u_id
+    id, `name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`,
+    u_id, p_id, d_id
   </sql>
   <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
     <!--@mbg.generated-->
-    select 
+    select
     <include refid="Base_Column_List" />
     from file_info
     where id = #{id,jdbcType=BIGINT}
@@ -33,6 +35,17 @@
     delete from file_info
     where id = #{id,jdbcType=BIGINT}
   </delete>
+  <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.FileInfo" useGeneratedKeys="true">
+    <!--@mbg.generated-->
+    insert into file_info (`name`, `path`, suffix,
+    `size`, update_time, dir,
+    create_time, change_time, `index`,
+    u_id, p_id, d_id)
+    values (#{name,jdbcType=VARCHAR}, #{path,jdbcType=VARCHAR}, #{suffix,jdbcType=VARCHAR},
+    #{size,jdbcType=BIGINT}, #{updateTime,jdbcType=TIMESTAMP}, #{dir,jdbcType=TINYINT},
+    #{createTime,jdbcType=TIMESTAMP}, #{changeTime,jdbcType=TIMESTAMP}, #{index,jdbcType=TINYINT},
+    #{uId,jdbcType=BIGINT}, #{pId,jdbcType=BIGINT}, #{dId,jdbcType=BIGINT})
+  </insert>
   <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.asuala.file.server.vo.FileInfo" useGeneratedKeys="true">
     <!--@mbg.generated-->
     insert into file_info
@@ -67,6 +80,12 @@
       <if test="uId != null">
         u_id,
       </if>
+      <if test="pId != null">
+        p_id,
+      </if>
+      <if test="dId != null">
+        d_id,
+      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="name != null">
@@ -98,6 +117,12 @@
       </if>
       <if test="uId != null">
         #{uId,jdbcType=BIGINT},
+      </if>
+      <if test="pId != null">
+        #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="dId != null">
+        #{dId,jdbcType=BIGINT},
       </if>
     </trim>
   </insert>
@@ -135,6 +160,12 @@
       <if test="uId != null">
         u_id = #{uId,jdbcType=BIGINT},
       </if>
+      <if test="pId != null">
+        p_id = #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="dId != null">
+        d_id = #{dId,jdbcType=BIGINT},
+      </if>
     </set>
     where id = #{id,jdbcType=BIGINT}
   </update>
@@ -142,31 +173,33 @@
     <!--@mbg.generated-->
     update file_info
     set `name` = #{name,jdbcType=VARCHAR},
-      `path` = #{path,jdbcType=VARCHAR},
-      suffix = #{suffix,jdbcType=VARCHAR},
-      `size` = #{size,jdbcType=BIGINT},
-      update_time = #{updateTime,jdbcType=TIMESTAMP},
-      dir = #{dir,jdbcType=TINYINT},
-      create_time = #{createTime,jdbcType=TIMESTAMP},
-      change_time = #{changeTime,jdbcType=TIMESTAMP},
-      `index` = #{index,jdbcType=TINYINT},
-      u_id = #{uId,jdbcType=BIGINT}
+    `path` = #{path,jdbcType=VARCHAR},
+    suffix = #{suffix,jdbcType=VARCHAR},
+    `size` = #{size,jdbcType=BIGINT},
+    update_time = #{updateTime,jdbcType=TIMESTAMP},
+    dir = #{dir,jdbcType=TINYINT},
+    create_time = #{createTime,jdbcType=TIMESTAMP},
+    change_time = #{changeTime,jdbcType=TIMESTAMP},
+    `index` = #{index,jdbcType=TINYINT},
+    u_id = #{uId,jdbcType=BIGINT},
+    p_id = #{pId,jdbcType=BIGINT},
+    d_id = #{dId,jdbcType=BIGINT}
     where id = #{id,jdbcType=BIGINT}
   </update>
   <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
     <!--@mbg.generated-->
     insert into file_info
-    (`name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`, 
-      u_id)
+    (`name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`,
+    u_id, p_id, d_id)
     values
     <foreach collection="list" item="item" separator=",">
-      (#{item.name,jdbcType=VARCHAR}, #{item.path,jdbcType=VARCHAR}, #{item.suffix,jdbcType=VARCHAR}, 
-        #{item.size,jdbcType=BIGINT}, #{item.updateTime,jdbcType=TIMESTAMP}, #{item.dir,jdbcType=TINYINT}, 
-        #{item.createTime,jdbcType=TIMESTAMP}, #{item.changeTime,jdbcType=TIMESTAMP}, #{item.index,jdbcType=TINYINT}, 
-        #{item.uId,jdbcType=BIGINT})
+      (#{item.name,jdbcType=VARCHAR}, #{item.path,jdbcType=VARCHAR}, #{item.suffix,jdbcType=VARCHAR},
+      #{item.size,jdbcType=BIGINT}, #{item.updateTime,jdbcType=TIMESTAMP}, #{item.dir,jdbcType=TINYINT},
+      #{item.createTime,jdbcType=TIMESTAMP}, #{item.changeTime,jdbcType=TIMESTAMP}, #{item.index,jdbcType=TINYINT},
+      #{item.uId,jdbcType=BIGINT}, #{item.pId,jdbcType=BIGINT}, #{item.dId,jdbcType=BIGINT}
+      )
     </foreach>
   </insert>
-
 <!--auto generated by MybatisCodeHelper on 2024-02-01-->
   <select id="findNameByIndex" resultType="map">
 
@@ -198,10 +231,12 @@
     `change_time` datetime DEFAULT NULL COMMENT '文件修改时间',
     `index` tinyint unsigned DEFAULT NULL,
     `u_id` bigint unsigned DEFAULT '0' COMMENT '归属id',
+    `p_id` bigint unsigned DEFAULT '0' COMMENT '目录id',
     PRIMARY KEY (`id`),
     KEY `INDEX_NAME` (`name`) USING BTREE,
     KEY `INDEX_CHANGETIME` (`change_time`) USING BTREE,
-    KEY `INDEX_U_ID` (`u_id`) USING BTREE
+    KEY `INDEX_U_ID` (`u_id`) USING BTREE,
+    KEY `INDEX_P_ID` (`p_id`)
     ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文件信息';
     INSERT INTO file_info (`name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index`) SELECT `name`, `path`, suffix, `size`, update_time, dir, create_time, change_time, `index` FROM file_info_old  WHERE`index`!=#{index};
     DROP TABLE file_info_old;

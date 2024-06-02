@@ -1,6 +1,8 @@
 package com.asuala.file.server.config;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Snowflake;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.asuala.file.server.file.monitor.linux.Constant;
@@ -11,9 +13,7 @@ import com.asuala.file.server.file.monitor.win.vo.FileTreeNode;
 import com.asuala.file.server.mapper.FileInfoMapper;
 import com.asuala.file.server.mapper.UPathMapper;
 import com.asuala.file.server.mapper.UserMapper;
-import com.asuala.file.server.service.FileInfoService;
-import com.asuala.file.server.service.IndexService;
-import com.asuala.file.server.service.WatchFileService;
+import com.asuala.file.server.service.*;
 import com.asuala.file.server.utils.CPUUtils;
 import com.asuala.file.server.utils.FileIdUtils;
 import com.asuala.file.server.utils.MD5Utils;
@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -57,8 +58,7 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     private final FileInfoService fileInfoService;
     private final UPathMapper uPathMapper;
     private final UserMapper userMapper;
-    @Autowired(required = false)
-    private WatchFileService clientService;
+    private final EsService esService;
 
     @Value("${watch.rebuldFlag:false}")
     private boolean rebuldFlag;
@@ -74,25 +74,32 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     private boolean watchOpen;
     @Value("${watch.exclude}")
     private String exclude;
+    @Value("${watch.insertSize:5000}")
+    private int insertSize;
 
     @PostConstruct
-    public void init() {
+    public void init() throws Exception {
         String[] split = exclude.split(",");
         for (String s : split) {
             if (StringUtils.isNotBlank(s)) {
                 Constant.exclude.add(s);
             }
         }
+        Index index = CPUUtils.getCpuId();
+        MainConstant.systemInfo = index;
         log.info("忽略文件夹 {} 数量 {}", exclude, Constant.exclude.size());
     }
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+
+
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        Index index = CPUUtils.getCpuId();
+        Index index = MainConstant.systemInfo;
         addIndex(index);
-        MainConstant.systemInfo = index;
+        MainConstant.snowflake = IdUtil.getSnowflake(index.getId());
         if (watchOpen) {
             openWatch(index);
         }
@@ -144,15 +151,11 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
             initFileInfo(index, fileMap);
 
             if (index.getSystem().contains("LINUX")) {
-                CopyOnWriteArrayList<FileInfo>[][] array = InotifyLibraryUtil.rebuild(fileMap);
+                CopyOnWriteArrayList<FileInfo> array = InotifyLibraryUtil.rebuild(fileMap);
                 //保存文件信息
-                for (CopyOnWriteArrayList<FileInfo>[] fileDirArray : array) {
-                    for (CopyOnWriteArrayList<FileInfo> fileInfos : fileDirArray) {
-                        List<List<FileInfo>> split = CollectionUtil.split(fileInfos, 5000);
-                        for (List<FileInfo> infos : split) {
-                            fileInfoMapper.batchInsert(infos);
-                        }
-                    }
+                List<List<FileInfo>> split = CollectionUtil.split(array, insertSize);
+                for (List<FileInfo> infos : split) {
+                    fileInfoMapper.batchInsert(infos);
                 }
             } else {
                 MonitorFileUtil.fileInfoServicel = fileInfoService;
@@ -182,7 +185,7 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
         } else {
             FileMonitor fileMonitor = FileMonitor.getInstance();
             for (Map.Entry<String, Long> entry : fileMap.entrySet()) {
-                fileMonitor.addFileListener(new FileChangeListener(fileInfoService, entry.getKey(), entry.getValue()));
+                fileMonitor.addFileListener(new FileChangeListener(fileInfoService, entry.getKey(), entry.getValue(), esService));
                 File file = new File(entry.getKey());
                 if (!file.exists()) {
                     file.mkdirs();

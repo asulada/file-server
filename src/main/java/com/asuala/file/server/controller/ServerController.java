@@ -1,16 +1,21 @@
 package com.asuala.file.server.controller;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import com.alibaba.fastjson2.JSONObject;
 import com.asuala.file.server.es.Es8Client;
 import com.asuala.file.server.es.entity.FileInfoEs;
 import com.asuala.file.server.service.RecordService;
 import com.asuala.file.server.service.ServerService;
 import com.asuala.file.server.utils.MD5Utils;
+import com.asuala.file.server.vo.req.FileBatchInfoReq;
 import com.asuala.file.server.vo.req.FileInfoReq;
 import com.asuala.file.server.vo.req.RebuildReq;
 import com.asuala.file.server.vo.req.UrlReq;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @description:
@@ -59,7 +65,6 @@ public class ServerController {
     }
 
 
-
     @PostMapping("saveEs")
     public JSONObject saveEs(@RequestBody FileInfoReq req) {
         JSONObject res = new JSONObject();
@@ -86,10 +91,44 @@ public class ServerController {
             return res;
         }
         FileInfoEs fileInfoEs = convertEs(req);
-
         es8Client.addData(fileInfoEs, false);
         res.put("code", 200);
         return res;
+    }
+
+    @PostMapping("saveEsBatch")
+    public JSONObject saveEsBatch(@RequestBody FileBatchInfoReq req) {
+        JSONObject res = new JSONObject();
+        res.put("code", 222);
+        if (StringUtils.isBlank(req.getSign())) {
+            return res;
+        }
+        if (!MD5Utils.getSaltverifyMD5(req.getName(), salt, req.getSign())) {
+            return res;
+        }
+        if (StringUtils.isBlank(req.getName())) {
+            return res;
+        }
+        List<FileInfoEs> fileInfoEs = convertEsBatch(req);
+        es8Client.addData(fileInfoEs, true);
+
+        res.put("code", 200);
+        return res;
+    }
+
+    private List<FileInfoEs> convertEsBatch(FileBatchInfoReq list) {
+        return list.getFiles().stream().map(req -> {
+            FileInfoEs fileInfoEs = new FileInfoEs();
+            fileInfoEs.setId(req.getId());
+            fileInfoEs.setName(req.getName());
+            fileInfoEs.setPath(req.getPath());
+            fileInfoEs.setSuffix(req.getSuffix());
+            fileInfoEs.setSize(req.getSize());
+            fileInfoEs.setChangeTime(req.getChangeTime());
+            fileInfoEs.setIndex(req.getIndex());
+            fileInfoEs.setSId(req.getUId());
+            return fileInfoEs;
+        }).collect(Collectors.toList());
     }
 
     private FileInfoEs convertEs(FileInfoReq req) {
@@ -115,11 +154,18 @@ public class ServerController {
         if (!MD5Utils.getSaltverifyMD5(req.getName(), salt, req.getSign())) {
             return res;
         }
-        if (null == req.getId()) {
+        if (null == req.getId() || CollectionUtils.isEmpty(req.getIds())) {
             return res;
         }
-
-        es8Client.delDocId(req.getId().toString(), FileInfoEs.class);
+        if (null != req.getId()) {
+            es8Client.delDocId(req.getId().toString(), FileInfoEs.class);
+        } else {
+            es8Client.delByIds(Query.of(q -> q.terms((t -> t
+                    .field("sId")
+                    .terms(TermsQueryField.of(tf -> tf
+                            .value(req.getIds().stream().map(item -> FieldValue.of(item)).collect(Collectors.toList()))  // Replace with actual terms
+                    ))))), FileInfoEs.class);
+        }
         res.put("code", 200);
         return res;
     }

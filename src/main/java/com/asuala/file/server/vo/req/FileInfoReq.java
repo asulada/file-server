@@ -3,6 +3,7 @@ package com.asuala.file.server.vo.req;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * @description:
@@ -20,4 +21,5 @@ public class FileInfoReq {
     private Integer index;
     private String sign;
     private Long uId;
+    private List<Long> ids;
 }

@@ -1,10 +1,14 @@
 package com.asuala.file.server.file.monitor.linux;
 
+import com.asuala.file.server.config.MainConstant;
+import com.asuala.file.server.service.EsService;
 import com.asuala.file.server.service.FileInfoService;
 import com.asuala.file.server.utils.CacheUtils;
 import com.asuala.file.server.vo.FileInfo;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +19,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 
 /**
@@ -27,6 +32,7 @@ import java.util.concurrent.Executors;
 @ConditionalOnProperty(prefix = "watch", name = "open", havingValue = "true")
 public class FileListener {
 
+    private final EsService esService;
     private final FileInfoService fileInfoService;
 
     public static ExecutorService fixedThreadPool;
@@ -71,8 +77,14 @@ public class FileListener {
                         FileInfo fileInfo;
                         switch (mask) {
                             case Constant.IN_CREATE:
+                                fileInfoService.insert(new File(poll.getFullPath()), poll.getSId());
+                                break;
                             case Constant.IN_MOVED_TO:
                                 fileInfoService.insert(new File(poll.getFullPath()), poll.getSId());
+                                if (poll.isDir()) {
+
+                                    fileInfoService.batchSave(InotifyLibraryUtil.findDirFile(poll.getFullPath(), poll.getSId(), poll.getFd()), poll.getName());
+                                }
                                 break;
                             case Constant.IN_MODIFY:
                                 if (!isDir) {
@@ -86,17 +98,26 @@ public class FileListener {
                                         fileInfo.setCreateTime(new Date(file.lastModified()));
                                         fileInfo.setUpdateTime(new Date());
                                         fileInfoService.updateById(fileInfo);
-                                        fileInfoService.saveEs(fileInfo);
+                                        esService.saveEs(fileInfo);
                                     }
                                 }
                                 break;
                             case Constant.IN_MOVED_FROM:
+                                fileInfo = fileInfoService.findFileInfo(new File(poll.getFullPath()));
+                                if (null != fileInfo) {
+                                    fileInfoService.deleteByPrimaryKey(fileInfo.getId());
+                                    esService.delEs(fileInfo);
+                                    if (poll.isDir()) {
+                                        fileInfoService.clearDir(fileInfo, poll);
+                                    }
+                                }
+                                break;
                             case Constant.IN_DELETE:
                             case Constant.IN_DELETE_SELF:
                                 fileInfo = fileInfoService.findFileInfo(new File(poll.getFullPath()));
                                 if (null != fileInfo) {
                                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
-                                    fileInfoService.delEs(fileInfo);
+                                    esService.delEs(fileInfo);
                                 }
                                 break;
                             default:

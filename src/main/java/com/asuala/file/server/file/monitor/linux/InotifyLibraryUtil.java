@@ -1,6 +1,8 @@
 package com.asuala.file.server.file.monitor.linux;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.asuala.file.server.config.MainConstant;
+import com.asuala.file.server.service.FileInfoService;
 import com.asuala.file.server.utils.CacheUtils;
 import com.asuala.file.server.utils.FileUtils;
 import com.asuala.file.server.vo.FileInfo;
@@ -9,15 +11,17 @@ import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -27,10 +31,19 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class InotifyLibraryUtil {
 
-
     public static ExecutorService fixedThreadPool;
 
-    public static ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, String>> fdMap = new ConcurrentHashMap();
+    public static Map<Integer, Watch> fdMap = new HashMap<>();
+
+    public static void removeWd(Integer fd, List<String> childPaths) {
+        Watch watch = fdMap.get(fd);
+        for (String path : childPaths) {
+            Integer key = watch.getKey(path);
+            if (null != key) {
+                watch.removeWatchDir(key, path);
+            }
+        }
+    }
 
     public interface InotifyLibrary extends Library {
         InotifyLibrary INSTANCE = (InotifyLibrary) Native.load("c", InotifyLibrary.class);
@@ -152,13 +165,22 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         }
     }
 
-    public static CopyOnWriteArrayList<FileInfo>[][] rebuild(Map<String, Long> fileMap) throws IOException {
-        CopyOnWriteArrayList<FileInfo>[][] dirFileArray = new CopyOnWriteArrayList[fileMap.size()][2];
-        int i = 0;
-        for (Map.Entry<String, Long> entry : fileMap.entrySet()) {
-            dirFileArray[i++] = findDirFile(entry.getKey(), entry.getValue());
+    public static CopyOnWriteArrayList<FileInfo> rebuild(Map<String, Long> fileMap) throws InterruptedException {
+        CopyOnWriteArrayList<FileInfo> dirFileArray = new CopyOnWriteArrayList();
+        ExecutorService pool = Executors.newFixedThreadPool(fileMap.size());
+        List<Callable<String>> tasks = new ArrayList<>();
 
+        for (Map.Entry<String, Long> entry : fileMap.entrySet()) {
+            tasks.add(() -> {
+                try {
+                    findDirFile(entry.getKey(), entry.getValue(), dirFileArray);
+                } catch (IOException e) {
+                    log.error("重建遍历错误 {}", entry.getKey(), e);
+                }
+                return null;
+            });
         }
+        pool.invokeAll(tasks, 10, TimeUnit.MINUTES);
         return dirFileArray;
     }
 
@@ -167,7 +189,13 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         for (Map.Entry<String, Long> entry : fileMap.entrySet()) {
             try {
                 List<String> dirPaths = findDir(entry.getKey());
-                fixedThreadPool.execute(new Watch(dirPaths, entry.getValue()));
+                Watch watch = new Watch(dirPaths, entry.getValue());
+                fixedThreadPool.execute(watch);
+                while (watch.getFd() == null) {
+                    log.info("等待获取fd {}", entry.getKey());
+                    Thread.sleep(1000L);
+                }
+                fdMap.put(watch.getFd(), watch);
                 log.info("{} 监控目录数量 {}", entry.getKey(), dirPaths.size());
 
             } catch (Exception e) {
@@ -184,23 +212,88 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
 
         List<String> dirs
                 = new ArrayList<>();
-        Files.walk(startPath)
-                .filter(Files::isDirectory)
-                .forEach(item -> dirs.add(item.toString()));
+
+        // 使用 Files.walk() 方法遍历文件夹
+        Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                // 获取文件夹信息
+                if (Constant.exclude.contains(dir.getFileName().toString())) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                dirs.add(dir.toString());
+                return FileVisitResult.CONTINUE;
+            }
+
+        });
         return dirs;
     }
 
-    private static boolean report = true;
-
-    public static CopyOnWriteArrayList<FileInfo>[] findDirFile(String path, Long uId) throws IOException {
+    public static List<FileInfo> findDirFile(String path, Long uId, Integer fd) throws IOException {
         // 指定要遍历的文件夹路径
         Path folderPath = Paths.get(path);
 
-        CopyOnWriteArrayList<FileInfo> dirs = new CopyOnWriteArrayList();
-        CopyOnWriteArrayList<FileInfo> files = new CopyOnWriteArrayList();
+        List<FileInfo> files = new ArrayList();
 
+        Map<String, Long> map = new HashMap<>();
+
+        // 使用 Files.walk() 方法遍历文件夹
+        Files.walkFileTree(folderPath, new SimpleFileVisitor<Path>() {
+
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                // 获取文件夹信息
+                if (Constant.exclude.contains(dir.getFileName().toString())) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                String path = dir.toString();
+
+                fdMap.get(fd).addWatchDir(path);
+
+                long dId = MainConstant.snowflake.nextId();
+                FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(dir.getFileName().toString()).path(path).createTime(new Date())
+                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(1).uId(uId).dId(dId).pId(0L).build();
+                files.add(fileInfo);
+                map.put(path, dId);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                // 获取文件修改时间
+                // 获取文件大小
+                String fileName = file.getFileName().toString();
+
+                String suffix = FileUtils.getSuffix(fileName);
+//                if (suffix.length() > 20) {
+//                    log.warn("文件后缀名过长: {}", file.toString());
+//                    return FileVisitResult.CONTINUE;
+//                }
+                Long pId = map.get(file.getParent().toString());
+
+                FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(fileName).path(file.toString()).createTime(new Date())
+                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(0).size(attrs.size()).suffix(suffix).uId(uId).dId(0L).pId(pId).build();
+                files.add(fileInfo);
+
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return files;
+    }
+
+
+    public static void findDirFile(String path, Long uId, CopyOnWriteArrayList<FileInfo> dirFileArray) throws IOException {
+        // 指定要遍历的文件夹路径
+        Path folderPath = Paths.get(path);
+
+        List<FileInfo> dirs = new ArrayList<>();
+        List<FileInfo> files = new ArrayList();
+
+        Map<String, Long> map = new HashMap<>();
+
+        final AtomicBoolean report = new AtomicBoolean();
         Thread thread = new Thread(() -> {
-            while (report) {
+            while (report.get()) {
                 log.info("{} 已统计文件数量 {}", path, dirs.size() + files.size());
                 try {
                     Thread.sleep(2000L);
@@ -211,55 +304,58 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
             log.info("{} 遍历结束 已统计文件数量 {}", path, dirs.size() + files.size());
         });
         thread.start();
+
         // 使用 Files.walk() 方法遍历文件夹
         Files.walkFileTree(folderPath, new SimpleFileVisitor<Path>() {
 
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                 // 获取文件夹信息
-                if (Constant.exclude.contains(dir.getFileName().toString())){
+                if (Constant.exclude.contains(dir.getFileName().toString())) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
-                FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(dir.getFileName().toString()).path(dir.toString()).createTime(new Date())
-                        .changeTime(new Date(Files.getLastModifiedTime(dir).toMillis())).dir(1).uId(uId).build();
+                long dId = MainConstant.snowflake.nextId();
+                String path = dir.toString();
+                FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(dir.getFileName().toString()).path(path).createTime(new Date())
+                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(1).uId(uId).dId(dId).pId(0L).build();
                 dirs.add(fileInfo);
+                map.put(path, dId);
+//                log.info("目录 {} id {}", path, dId);
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 // 获取文件修改时间
-                Date modifyTime = new Date(Files.getLastModifiedTime(file).toMillis());
-
                 // 获取文件大小
-                long fileSize = Files.size(file);
-
                 String fileName = file.getFileName().toString();
 
                 String suffix = FileUtils.getSuffix(fileName);
-//                if (suffix.length() > 20) {
-//                    log.warn("文件后缀名过长: {}", file.toString());
-//                    return FileVisitResult.CONTINUE;
-//                }
+//
+                Long pId = map.get(file.getParent().toString());
+//                log.info("父级目录 {} id {}", file.getParent(), pId);
+
                 FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(fileName).path(file.toString()).createTime(new Date())
-                        .changeTime(modifyTime).dir(0).size(fileSize).suffix(suffix).uId(uId).build();
+                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(0).size(attrs.size()).suffix(suffix).uId(uId).dId(0L).pId(pId).build();
                 files.add(fileInfo);
 
                 return FileVisitResult.CONTINUE;
             }
         });
-        report = false;
+        report.set(false);
         try {
             thread.join();
         } catch (InterruptedException e) {
             log.error("{} 等待统计线程结束失败", path);
         }
-        return new CopyOnWriteArrayList[]{dirs, files};
+        dirFileArray.addAll(dirs);
+        dirFileArray.addAll(files);
     }
 
     public static void close() {
-        for (Map.Entry<Integer, ConcurrentHashMap<Integer, String>> fdEntry : fdMap.entrySet()) {
+        for (Map.Entry<Integer, Watch> fdEntry : fdMap.entrySet()) {
+
             Integer fd = fdEntry.getKey();
-            Map<Integer, String> wdMap = fdEntry.getValue();
+            BidiMap<Integer, String> wdMap = fdEntry.getValue().getBidiMap();
             for (Map.Entry<Integer, String> entry : wdMap.entrySet()) {
                 try {
                     InotifyLibrary.INSTANCE.inotify_rm_watch(fd, entry.getKey());
@@ -275,15 +371,66 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
 
     static class Watch implements Runnable {
 
-        private int fd;
-        private ConcurrentHashMap<Integer, String> wdMap = new ConcurrentHashMap<>();
+        private Integer fd;
         private List<String> paths;
         private static final int size = 4096;
         private static Long sId;
+        private BidiMap<Integer, String> bidiMap = new DualHashBidiMap<>();
+        private ReadWriteLock lock = new ReentrantReadWriteLock();
+
+        public BidiMap<Integer, String> getBidiMap() {
+            return bidiMap;
+        }
+
+        public Integer getKey(String value) {
+            lock.readLock().lock();
+            try {
+                return bidiMap.getKey(value);
+                // other read operations
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        public String getValue(Integer key) {
+            lock.readLock().lock();
+            try {
+                return bidiMap.get(key);
+                // other read operations
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        public void setBidi(Integer key, String value) {
+
+            lock.writeLock().lock();
+            try {
+                bidiMap.put(key, value);
+                // other write operations
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        public void removeBidi(Integer key) {
+
+            lock.writeLock().lock();
+            try {
+                bidiMap.remove(key);
+                // other write operations
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
 
         public Watch(List<String> paths, Long sId) {
             this.paths = paths;
             this.sId = sId;
+        }
+
+        public Integer getFd() {
+            return fd;
         }
 
         @Override
@@ -297,13 +444,15 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
             for (String path : paths) {
                 addWatchDir(path);
             }
-            fdMap.put(fd, wdMap);
 
             Pointer pointer = new Memory(size);
             try {
                 while (CacheUtils.watchFlag) {
                     int bytesRead = InotifyLibrary.INSTANCE.read(fd, pointer, size);
 
+                    if (!CacheUtils.watchFlag) {
+                        break;
+                    }
                     for (int i = 0; i < bytesRead; ) {
                         String event = "";
                         int wd2 = pointer.getInt(i);
@@ -320,7 +469,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                         String name = byteToStr(nameBytes);
 
 
-                        String path = wdMap.get(wd2);
+                        String path = getValue(wd2);
 
                         String filePath = path + MainConstant.FILESEPARATOR + name;
                         boolean isDir = nameLen == 0;
@@ -338,7 +487,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                         if (mask == Constant.IN_IGNORED) {
                             filePath = filePath.substring(0, filePath.length() - 1);
                             isDir = true;
-                            removeWatchDir(wd2);
+                            removeWatchDir(wd2, path);
                         }
 
                         if (isDir) {
@@ -356,6 +505,8 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                         fileVo.setCode(mask);
                         fileVo.setDir(isDir);
                         fileVo.setSId(sId);
+
+                        fileVo.setFd(fd);
                         CacheUtils.queue.offer(fileVo);
 
                     }
@@ -368,14 +519,14 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         private void addWatchDir(String path) {
             int wd = InotifyLibrary.INSTANCE.inotify_add_watch(fd, path,
                     Constant.IN_MOVED_FROM | Constant.IN_MOVED_TO | Constant.IN_CREATE | Constant.IN_DELETE | Constant.IN_DELETE_SELF);
-            wdMap.put(wd, path);
-            log.debug("添加监控路径: {}", path);
+            setBidi(wd, path);
+            log.info("添加监控路径: {}", path);
         }
 
-        private void removeWatchDir(int wd) {
+        private void removeWatchDir(int wd, String path) {
             InotifyLibrary.INSTANCE.inotify_rm_watch(fd, wd);
-            log.debug("移除监控路径: {}", wdMap.get(wd));
-            wdMap.remove(wd);
+            log.info("移除监控路径: {}", path);
+            removeBidi(wd);
         }
     }
 

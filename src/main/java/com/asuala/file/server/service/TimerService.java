@@ -52,7 +52,7 @@ public class TimerService {
             }
             List<FileInfoEs> listEs = fileInfos.stream().map(item -> FileInfoEs.builder().id(item.getId()).changeTime(item.getChangeTime()).index(item.getIndex()).
                     path(item.getPath()).size(item.getSize()).name(item.getName()).suffix(item.getSuffix()).sId(item.getUId()).build()).collect(Collectors.toList());
-            es8Client.addDatas(listEs, false);
+            es8Client.addData(listEs, false);
         }
     }
 

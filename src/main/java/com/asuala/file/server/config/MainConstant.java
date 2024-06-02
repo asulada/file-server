@@ -1,5 +1,6 @@
 package com.asuala.file.server.config;
 
+import cn.hutool.core.lang.Snowflake;
 import com.asuala.file.server.vo.Index;
 
 import java.util.HashMap;
@@ -16,5 +17,5 @@ public class MainConstant {
     public static Integer index;
     public static final String FILESEPARATOR = System.getProperty("file.separator");
     public static Map<String, Long> volumeNos = new HashMap<>();
-
+    public static Snowflake snowflake;
 }

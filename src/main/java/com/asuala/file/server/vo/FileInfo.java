@@ -58,8 +58,18 @@ public class FileInfo {
     @TableField("`index`")
     private Integer index;
 
+
     /**
      * 归属id
      */
     private Long uId;
+    /**
+     * 父级id
+     */
+    private Long pId;
+
+    /**
+     * 目录id
+     */
+    private Long dId;
 }

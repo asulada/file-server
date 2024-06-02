@@ -1,5 +1,7 @@
 package com.asuala.file.server.file.monitor.linux;
 
+import cn.hutool.core.lang.Snowflake;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -25,4 +27,5 @@ public class Constant {
     public static final int IN_Q_OVERFLOW = 0x00004000;//File was ignored
 
     public static Set<String> exclude = new HashSet<>();
+
 }

@@ -87,6 +87,7 @@ search:
 watch:
   open: false
   rebuldFlag: true
+  insertSize: 5000
   deleteLimit: 2000000
   exclude: node_modules
 
