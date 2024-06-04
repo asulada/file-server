@@ -20,6 +20,7 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import co.elastic.clients.util.ObjectBuilder;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
 import com.asuala.file.server.es.annotation.DocId;
 import com.asuala.file.server.es.annotation.EsClass;
 import com.asuala.file.server.es.annotation.EsField;
@@ -295,7 +296,7 @@ public class Es8Client {
      * @param async 是否异步 true异步 ,false同步 ,如果是异步那么永远返回null
      * @return
      */
-    public <T> String updateData(T o, boolean async) {
+    public <T> String updateDataInsert(T o, boolean async) {
         Object id = null;
         for (Field declaredField : o.getClass().getDeclaredFields()) {
             declaredField.setAccessible(true);
@@ -322,8 +323,8 @@ public class Es8Client {
             UpdateRequest.Builder<FileInfoEs, Object> builder = new UpdateRequest.Builder<>();
             builder.index(getClassAlias(o.getClass()));
             builder.id(String.valueOf(id));
-            builder.withJson(new StringReader(JSONObject.toJSONString(o)));
-
+            builder.doc(o);
+            builder.upsert((FileInfoEs) o);
             if (async) {
                 asyncClient.update(builder.build(), FileInfoEs.class);
                 return null;

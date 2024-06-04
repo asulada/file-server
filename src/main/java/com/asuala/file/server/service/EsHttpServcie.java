@@ -31,8 +31,6 @@ public class EsHttpServcie implements EsService {
     private String delUrl;
     @Value("${file.server.http.salt}")
     private String salt;
-    @Value("${watch.insertSize:5000}")
-    private int insertSize;
 
     public void saveEs(FileInfo fileInfo) {
 

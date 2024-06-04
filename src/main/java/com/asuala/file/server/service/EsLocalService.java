@@ -31,7 +31,7 @@ public class EsLocalService implements EsService{
 
     public void saveEs(FileInfo fileInfo) {
         FileInfoEs fileInfoEs = convertEs(fileInfo);
-        es8Client.addData(fileInfoEs, true);
+        es8Client.updateDataInsert(fileInfoEs, true);
 
 
     }

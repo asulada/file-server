@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class FileVo {
     private String fullPath;
-    private String path;
+    private String parentPath;
     private String name;
     private int code;
     private boolean isDir;

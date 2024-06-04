@@ -25,4 +25,8 @@ public interface FileInfoMapper extends BaseMapper<FileInfo> {
     long deleteLimit(@Param("index") int index);
 
     void dropIndex(@Param("index") int index);
+
+    Long selectDidByPath(@Param("path")String path);
+
+
 }

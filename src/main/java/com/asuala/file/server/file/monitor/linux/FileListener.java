@@ -1,5 +1,6 @@
 package com.asuala.file.server.file.monitor.linux;
 
+import cn.hutool.core.io.FileUtil;
 import com.asuala.file.server.config.MainConstant;
 import com.asuala.file.server.service.EsService;
 import com.asuala.file.server.service.FileInfoService;
@@ -73,29 +74,44 @@ public class FileListener {
                                 continue;
                             }
                         }
-
+                        FileMemory fileMemory;
+                        Long pId;
                         FileInfo fileInfo;
                         switch (mask) {
                             case Constant.IN_CREATE:
-                                fileInfoService.insert(new File(poll.getFullPath()), poll.getSId());
+                                fileMemory = InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().get(poll.getParentPath());
+                                if (null == fileMemory) {
+                                    pId = fileInfoService.findFileInfo(new File(poll.getParentPath())).getDId();
+                                } else {
+                                    pId = fileMemory.getDId();
+                                }
+                                fileInfoService.insert(new File(poll.getFullPath()), poll.getSId(), pId);
                                 break;
                             case Constant.IN_MOVED_TO:
-                                fileInfoService.insert(new File(poll.getFullPath()), poll.getSId());
+                                fileMemory = InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().get(poll.getParentPath());
+                                if (null == fileMemory) {
+                                    pId = fileInfoService.findFileInfo(new File(poll.getParentPath())).getDId();
+                                } else {
+                                    pId = fileMemory.getDId();
+                                }
                                 if (poll.isDir()) {
+                                    fileInfoService.batchSave(InotifyLibraryUtil.findDirFile(poll.getFullPath(), poll.getSId(), poll.getFd(), pId), poll.getName(), poll.getFd());
+                                } else {
+                                    fileInfoService.insert(new File(poll.getFullPath()), poll.getSId(), pId);
 
-                                    fileInfoService.batchSave(InotifyLibraryUtil.findDirFile(poll.getFullPath(), poll.getSId(), poll.getFd()), poll.getName());
                                 }
                                 break;
                             case Constant.IN_MODIFY:
                                 if (!isDir) {
-                                    fileInfo = fileInfoService.findFileInfo(poll.getName(), poll.getPath());
+                                    fileInfo = fileInfoService.findFileInfo(poll);
                                     if (null == fileInfo) {
+                                        pId = InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().get(poll.getParentPath()).getId();
                                         log.warn("{} 修改文件事件-没有文件", poll.getFullPath());
-                                        fileInfoService.insert(new File(poll.getFullPath()), poll.getSId());
+                                        fileInfoService.insert(new File(poll.getFullPath()), poll.getSId(), pId);
                                     } else {
                                         File file = new File(poll.getFullPath());
                                         fileInfo.setSize(file.length());
-                                        fileInfo.setCreateTime(new Date(file.lastModified()));
+                                        fileInfo.setChangeTime(new Date(file.lastModified()));
                                         fileInfo.setUpdateTime(new Date());
                                         fileInfoService.updateById(fileInfo);
                                         esService.saveEs(fileInfo);
@@ -103,7 +119,7 @@ public class FileListener {
                                 }
                                 break;
                             case Constant.IN_MOVED_FROM:
-                                fileInfo = fileInfoService.findFileInfo(new File(poll.getFullPath()));
+                                fileInfo = fileInfoService.findFileInfo(poll);
                                 if (null != fileInfo) {
                                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
                                     esService.delEs(fileInfo);
@@ -114,7 +130,7 @@ public class FileListener {
                                 break;
                             case Constant.IN_DELETE:
                             case Constant.IN_DELETE_SELF:
-                                fileInfo = fileInfoService.findFileInfo(new File(poll.getFullPath()));
+                                fileInfo = fileInfoService.findFileInfo(poll);
                                 if (null != fileInfo) {
                                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
                                     esService.delEs(fileInfo);

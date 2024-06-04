@@ -39,6 +39,7 @@ public class InotifyLibraryUtil {
         Watch watch = fdMap.get(fd);
         for (String path : childPaths) {
             Integer key = watch.getKey(path);
+            fdMap.get(fd).getPathIdMap().remove(path);
             if (null != key) {
                 watch.removeWatchDir(key, path);
             }
@@ -165,15 +166,16 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         }
     }
 
-    public static CopyOnWriteArrayList<FileInfo> rebuild(Map<String, Long> fileMap) throws InterruptedException {
-        CopyOnWriteArrayList<FileInfo> dirFileArray = new CopyOnWriteArrayList();
+    public static Map<Integer, List<FileInfo>> rebuild(Map<String, FileNode> fileMap) throws InterruptedException {
+        Map<Integer, List<FileInfo>> map = new ConcurrentHashMap<>();
+//        CopyOnWriteArrayList<FileInfo> dirFileArray = new CopyOnWriteArrayList();
         ExecutorService pool = Executors.newFixedThreadPool(fileMap.size());
         List<Callable<String>> tasks = new ArrayList<>();
 
-        for (Map.Entry<String, Long> entry : fileMap.entrySet()) {
+        for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
             tasks.add(() -> {
                 try {
-                    findDirFile(entry.getKey(), entry.getValue(), dirFileArray);
+                    map.put(entry.getValue().getFd(), findDirFile(entry.getKey(), entry.getValue().getSId()));
                 } catch (IOException e) {
                     log.error("重建遍历错误 {}", entry.getKey(), e);
                 }
@@ -181,21 +183,22 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
             });
         }
         pool.invokeAll(tasks, 10, TimeUnit.MINUTES);
-        return dirFileArray;
+        return map;
     }
 
-    public static void init(Map<String, Long> fileMap) {
+    public static void init(Map<String, FileNode> fileMap) {
         fixedThreadPool = Executors.newFixedThreadPool(fileMap.size());
-        for (Map.Entry<String, Long> entry : fileMap.entrySet()) {
+        for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
             try {
                 List<String> dirPaths = findDir(entry.getKey());
-                Watch watch = new Watch(dirPaths, entry.getValue());
+                Watch watch = new Watch(dirPaths, entry.getValue().getSId());
                 fixedThreadPool.execute(watch);
                 while (watch.getFd() == null) {
                     log.info("等待获取fd {}", entry.getKey());
                     Thread.sleep(1000L);
                 }
                 fdMap.put(watch.getFd(), watch);
+                entry.getValue().setFd(watch.getFd());
                 log.info("{} 监控目录数量 {}", entry.getKey(), dirPaths.size());
 
             } catch (Exception e) {
@@ -229,7 +232,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         return dirs;
     }
 
-    public static List<FileInfo> findDirFile(String path, Long uId, Integer fd) throws IOException {
+    public static List<FileInfo> findDirFile(String path, Long uId, Integer fd, Long pId) throws IOException {
         // 指定要遍历的文件夹路径
         Path folderPath = Paths.get(path);
 
@@ -245,13 +248,12 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                 if (Constant.exclude.contains(dir.getFileName().toString())) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
-                String path = dir.toString();
 
                 fdMap.get(fd).addWatchDir(path);
 
                 long dId = MainConstant.snowflake.nextId();
                 FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(dir.getFileName().toString()).path(path).createTime(new Date())
-                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(1).uId(uId).dId(dId).pId(0L).build();
+                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(1).uId(uId).dId(dId).pId(map.get(dir.getParent().toString())).build();
                 files.add(fileInfo);
                 map.put(path, dId);
                 return FileVisitResult.CONTINUE;
@@ -277,16 +279,21 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                 return FileVisitResult.CONTINUE;
             }
         });
-
+        if (files.get(0).getPId() == null) {
+            files.get(0).setPId(pId);
+        } else {
+            log.error("{} 根路径pId {}", path, files.get(0).getPId());
+        }
+        log.info("{} 遍历文件数量 {}", path, files.size());
         return files;
     }
 
 
-    public static void findDirFile(String path, Long uId, CopyOnWriteArrayList<FileInfo> dirFileArray) throws IOException {
+    public static List<FileInfo> findDirFile(String path, Long uId) throws IOException {
         // 指定要遍历的文件夹路径
         Path folderPath = Paths.get(path);
 
-        List<FileInfo> dirs = new ArrayList<>();
+//        List<FileInfo> dirs = new ArrayList<>();
         List<FileInfo> files = new ArrayList();
 
         Map<String, Long> map = new HashMap<>();
@@ -294,17 +301,16 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         final AtomicBoolean report = new AtomicBoolean();
         Thread thread = new Thread(() -> {
             while (report.get()) {
-                log.info("{} 已统计文件数量 {}", path, dirs.size() + files.size());
+                log.info("{} 已统计文件数量 {}", path, files.size());
                 try {
                     Thread.sleep(2000L);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-            log.info("{} 遍历结束 已统计文件数量 {}", path, dirs.size() + files.size());
+            log.info("{} 遍历结束 已统计文件数量 {}", path, files.size());
         });
         thread.start();
-
         // 使用 Files.walk() 方法遍历文件夹
         Files.walkFileTree(folderPath, new SimpleFileVisitor<Path>() {
 
@@ -316,8 +322,8 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                 long dId = MainConstant.snowflake.nextId();
                 String path = dir.toString();
                 FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(dir.getFileName().toString()).path(path).createTime(new Date())
-                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(1).uId(uId).dId(dId).pId(0L).build();
-                dirs.add(fileInfo);
+                        .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(1).uId(uId).dId(dId).pId(map.get(dir.getParent().toString())).build();
+                files.add(fileInfo);
                 map.put(path, dId);
 //                log.info("目录 {} id {}", path, dId);
                 return FileVisitResult.CONTINUE;
@@ -347,8 +353,14 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         } catch (InterruptedException e) {
             log.error("{} 等待统计线程结束失败", path);
         }
-        dirFileArray.addAll(dirs);
-        dirFileArray.addAll(files);
+        if (files.get(0).getPId() == null) {
+            files.get(0).setPId(0L);
+        } else {
+            log.error("{} 根路径pId {}", path, files.get(0).getPId());
+        }
+        log.info("{} 遍历文件数量 {}", path, files.size());
+//        dirFileArray.addAll(dirs);
+        return files;
     }
 
     public static void close() {
@@ -369,14 +381,19 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         }
     }
 
-    static class Watch implements Runnable {
+    public static class Watch implements Runnable {
 
         private Integer fd;
         private List<String> paths;
         private static final int size = 4096;
         private static Long sId;
         private BidiMap<Integer, String> bidiMap = new DualHashBidiMap<>();
+        private Map<String, FileMemory> pathIdMap = new ConcurrentHashMap<>(512);
         private ReadWriteLock lock = new ReentrantReadWriteLock();
+
+        public Map<String, FileMemory> getPathIdMap() {
+            return pathIdMap;
+        }
 
         public BidiMap<Integer, String> getBidiMap() {
             return bidiMap;
@@ -500,7 +517,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
 
                         FileVo fileVo = new FileVo();
                         fileVo.setFullPath(filePath);
-                        fileVo.setPath(path);
+                        fileVo.setParentPath(path);
                         fileVo.setName(name);
                         fileVo.setCode(mask);
                         fileVo.setDir(isDir);

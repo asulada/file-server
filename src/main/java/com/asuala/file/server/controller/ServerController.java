@@ -91,7 +91,7 @@ public class ServerController {
             return res;
         }
         FileInfoEs fileInfoEs = convertEs(req);
-        es8Client.addData(fileInfoEs, false);
+        es8Client.updateDataInsert(fileInfoEs, true);
         res.put("code", 200);
         return res;
     }

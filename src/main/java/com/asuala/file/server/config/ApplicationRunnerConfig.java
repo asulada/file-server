@@ -6,6 +6,8 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.asuala.file.server.file.monitor.linux.Constant;
+import com.asuala.file.server.file.monitor.linux.FileMemory;
+import com.asuala.file.server.file.monitor.linux.FileNode;
 import com.asuala.file.server.file.monitor.linux.InotifyLibraryUtil;
 import com.asuala.file.server.file.monitor.win.FileChangeListener;
 import com.asuala.file.server.file.monitor.win.utils.MonitorFileUtil;
@@ -24,6 +26,7 @@ import com.asuala.file.server.vo.User;
 import com.asuala.file.server.vo.req.RebuildReq;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sun.jna.platform.FileMonitor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,7 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -93,8 +97,6 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 
-
-
     @Override
     public void run(ApplicationArguments args) throws Exception {
         Index index = MainConstant.systemInfo;
@@ -136,8 +138,8 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
         if (uPaths.size() == 0) {
             return;
         }
-        Map<String, Long> fileMap = new HashMap<>();
-        uPaths.forEach(item -> fileMap.put(item.getPath(), FileIdUtils.buildFileId(item.getIndex().intValue(), item.getPath())));
+        Map<String, FileNode> fileMap = new HashMap<>();
+        uPaths.forEach(item -> fileMap.put(item.getPath(), FileNode.builder().sId(FileIdUtils.buildFileId(item.getIndex().intValue(), item.getPath())).build()));
         if (rebuldFlag) {
             //TODO-asuala 2024-02-02: 删除表数据
             Long count = fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getIndex, MainConstant.index));
@@ -151,12 +153,15 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
             initFileInfo(index, fileMap);
 
             if (index.getSystem().contains("LINUX")) {
-                CopyOnWriteArrayList<FileInfo> array = InotifyLibraryUtil.rebuild(fileMap);
+                Map<Integer, List<FileInfo>> map = InotifyLibraryUtil.rebuild(fileMap);
                 //保存文件信息
-                List<List<FileInfo>> split = CollectionUtil.split(array, insertSize);
-                for (List<FileInfo> infos : split) {
-                    fileInfoMapper.batchInsert(infos);
+                for (Map.Entry<Integer, List<FileInfo>> entry : map.entrySet()) {
+                    List<List<FileInfo>> split = CollectionUtil.split(entry.getValue(), insertSize);
+                    for (List<FileInfo> infos : split) {
+                        fileInfoService.batchSaveReturnId(infos, entry.getKey());
+                    }
                 }
+
             } else {
                 MonitorFileUtil.fileInfoServicel = fileInfoService;
                 for (Map.Entry<String, Long> entry : MainConstant.volumeNos.entrySet()) {
@@ -176,23 +181,36 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
             }
         } else {
             initFileInfo(index, fileMap);
+
+            for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
+                ConcurrentHashMap<String, FileMemory> pathIdMap = (ConcurrentHashMap) InotifyLibraryUtil.fdMap.get(entry.getValue().getFd()).getPathIdMap();
+                while (true) {
+                    int i = 1;
+                    Page<FileInfo> page = new Page<>(1, insertSize);
+                    Page<FileInfo> result = fileInfoMapper.selectPage(page, new LambdaQueryWrapper<FileInfo>().select(FileInfo::getId, FileInfo::getPath, FileInfo::getDId).eq(FileInfo::getUId, entry.getValue().getSId()));
+                    result.getRecords().stream().forEach(item -> pathIdMap.putIfAbsent(item.getPath(), FileMemory.builder().id(item.getId()).dId(item.getDId()).build()));
+                    if (i++ == result.getPages()) {
+                        break;
+                    }
+                }
+            }
         }
     }
 
-    private void initFileInfo(Index cpuId, Map<String, Long> fileMap) throws Exception {
+    private void initFileInfo(Index cpuId, Map<String, FileNode> fileMap) throws Exception {
         if (cpuId.getSystem().contains("LINUX")) {
             InotifyLibraryUtil.init(fileMap);
         } else {
             FileMonitor fileMonitor = FileMonitor.getInstance();
-            for (Map.Entry<String, Long> entry : fileMap.entrySet()) {
-                fileMonitor.addFileListener(new FileChangeListener(fileInfoService, entry.getKey(), entry.getValue(), esService));
+            for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
+                fileMonitor.addFileListener(new FileChangeListener(fileInfoService, entry.getKey(), entry.getValue().getSId(), esService));
                 File file = new File(entry.getKey());
                 if (!file.exists()) {
                     file.mkdirs();
                 }
                 fileMonitor.addWatch(file);
 
-                MainConstant.volumeNos.put(entry.getKey().substring(0, entry.getKey().indexOf(":") + 1), entry.getValue());
+                MainConstant.volumeNos.put(entry.getKey().substring(0, entry.getKey().indexOf(":") + 1), entry.getValue().getSId());
             }
 
         }
