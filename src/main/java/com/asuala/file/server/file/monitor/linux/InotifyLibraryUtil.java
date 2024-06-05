@@ -13,6 +13,7 @@ import com.sun.jna.Pointer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -39,7 +40,7 @@ public class InotifyLibraryUtil {
         Watch watch = fdMap.get(fd);
         for (String path : childPaths) {
             Integer key = watch.getKey(path);
-            fdMap.get(fd).getPathIdMap().remove(path);
+//            fdMap.get(fd).getPathIdMap().remove(path);
             if (null != key) {
                 watch.removeWatchDir(key, path);
             }
@@ -169,6 +170,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
     public static Map<Integer, List<FileInfo>> rebuild(Map<String, FileNode> fileMap) throws InterruptedException {
         Map<Integer, List<FileInfo>> map = new ConcurrentHashMap<>();
 //        CopyOnWriteArrayList<FileInfo> dirFileArray = new CopyOnWriteArrayList();
+
         ExecutorService pool = Executors.newFixedThreadPool(fileMap.size());
         List<Callable<String>> tasks = new ArrayList<>();
 
@@ -183,6 +185,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
             });
         }
         pool.invokeAll(tasks, 10, TimeUnit.MINUTES);
+        pool.shutdownNow();
         return map;
     }
 
@@ -244,18 +247,21 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         Files.walkFileTree(folderPath, new SimpleFileVisitor<Path>() {
 
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                String dirName = dir.getFileName().toString();
                 // 获取文件夹信息
-                if (Constant.exclude.contains(dir.getFileName().toString())) {
+                if (Constant.exclude.contains(dirName)) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
+                String curPath = dir.toString();
 
-                fdMap.get(fd).addWatchDir(path);
+                fdMap.get(fd).addWatchDir(curPath);
 
                 long dId = MainConstant.snowflake.nextId();
-                FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(dir.getFileName().toString()).path(path).createTime(new Date())
+
+                FileInfo fileInfo = FileInfo.builder().index(MainConstant.index).name(dirName).path(curPath).createTime(new Date())
                         .changeTime(new Date(attrs.lastModifiedTime().toMillis())).dir(1).uId(uId).dId(dId).pId(map.get(dir.getParent().toString())).build();
                 files.add(fileInfo);
-                map.put(path, dId);
+                map.put(curPath, dId);
                 return FileVisitResult.CONTINUE;
             }
 
@@ -464,6 +470,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
 
             Pointer pointer = new Memory(size);
             try {
+                StringBuilder strb = new StringBuilder();
                 while (CacheUtils.watchFlag) {
                     int bytesRead = InotifyLibrary.INSTANCE.read(fd, pointer, size);
 
@@ -487,25 +494,30 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
 
 
                         String path = getValue(wd2);
-
-                        String filePath = path + MainConstant.FILESEPARATOR + name;
-                        boolean isDir = nameLen == 0;
+                        strb.append(path);
+                        if (StringUtils.isNotBlank(name)) {
+                            strb.append(MainConstant.FILESEPARATOR).append(name);
+                        }
+                        String filePath = strb.toString();
+                        boolean isDir = false;
                         if ((mask & Constant.IN_ISDIR) != 0) {
                             mask -= Constant.IN_ISDIR;
                             isDir = true;
 
                             if (mask == Constant.IN_CREATE) {
                                 addWatchDir(filePath);
+                            } else if (mask == Constant.IN_IGNORED || mask == Constant.IN_DELETE) {
+                                continue;
                             }
 
                         }
                         event = eventNameMap.get(mask);
 
-                        if (mask == Constant.IN_IGNORED) {
-                            filePath = filePath.substring(0, filePath.length() - 1);
-                            isDir = true;
-                            removeWatchDir(wd2, path);
-                        }
+//                        if (mask == Constant.IN_IGNORED) {
+//                            filePath = filePath.substring(0, filePath.length() - 1);
+//                            isDir = true;
+//                            removeWatchDir(wd2, path);
+//                        }
 
                         if (isDir) {
                             log.debug("目录: {} 事件: {} 关联码: {} 目录名: {} ", path, event, cookie, name);

@@ -3,10 +3,13 @@ package com.asuala.file.server.service;
 import com.asuala.file.server.es.entity.FileInfoEs;
 import com.asuala.file.server.vo.FileInfo;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public interface EsService {
+
+    void rebuldData() throws IOException;
      void saveEs(FileInfo fileInfo);
     void saveEsList(List<FileInfo> fileInfos, String name);
     void delEs(FileInfo fileInfo);

@@ -70,8 +70,7 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     private boolean server;
     @Value("${file.server.http.salt}")
     private String salt;
-    @Value("${file.server.http.rebuildUrl}")
-    private String rebuildUrl;
+
     @Value("${watch.deleteLimit:1000000}")
     private int deleteLimit;
     @Value("${watch.open}")
@@ -158,7 +157,7 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
                 for (Map.Entry<Integer, List<FileInfo>> entry : map.entrySet()) {
                     List<List<FileInfo>> split = CollectionUtil.split(entry.getValue(), insertSize);
                     for (List<FileInfo> infos : split) {
-                        fileInfoService.batchSaveReturnId(infos, entry.getKey());
+                        fileInfoService.initBatchSave(infos, entry.getKey());
                     }
                 }
 
@@ -170,15 +169,7 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
                 }
 
             }
-
-            RebuildReq req = new RebuildReq();
-            req.setIndex(MainConstant.index);
-            req.setSign(MD5Utils.getSaltMD5(String.valueOf(MainConstant.index), salt));
-            try {
-                HttpUtil.post(rebuildUrl, JSON.toJSONString(req));
-            } catch (Exception e) {
-                log.error("发送重建数据请求失败id: {}", MainConstant.index, e);
-            }
+            esService.rebuldData();
         } else {
             initFileInfo(index, fileMap);
 

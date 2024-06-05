@@ -5,12 +5,14 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import com.alibaba.fastjson2.JSON;
+import com.asuala.file.server.config.MainConstant;
 import com.asuala.file.server.es.Es8Client;
 import com.asuala.file.server.es.entity.FileInfoEs;
 import com.asuala.file.server.utils.MD5Utils;
 import com.asuala.file.server.vo.FileInfo;
 import com.asuala.file.server.vo.req.FileBatchInfoReq;
 import com.asuala.file.server.vo.req.FileInfoReq;
+import com.asuala.file.server.vo.req.RebuildReq;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,13 +26,26 @@ import java.util.stream.Collectors;
  **/
 @Slf4j
 public class EsHttpServcie implements EsService {
-
+    @Value("${file.server.http.rebuildUrl}")
+    private String rebuildUrl;
     @Value("${file.server.http.addUrl}")
     private String addUrl;
     @Value("${file.server.http.delUrl}")
     private String delUrl;
     @Value("${file.server.http.salt}")
     private String salt;
+
+    @Override
+    public void rebuldData() {
+        RebuildReq req = new RebuildReq();
+        req.setIndex(MainConstant.index);
+        req.setSign(MD5Utils.getSaltMD5(String.valueOf(MainConstant.index), salt));
+        try {
+            HttpUtil.post(rebuildUrl, JSON.toJSONString(req));
+        } catch (Exception e) {
+            log.error("发送重建数据请求失败id: {}", MainConstant.index, e);
+        }
+    }
 
     public void saveEs(FileInfo fileInfo) {
 

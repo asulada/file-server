@@ -161,7 +161,7 @@ public class ServerController {
             es8Client.delDocId(req.getId().toString(), FileInfoEs.class);
         } else {
             es8Client.delByIds(Query.of(q -> q.terms((t -> t
-                    .field("sId")
+                    .field("id")
                     .terms(TermsQueryField.of(tf -> tf
                             .value(req.getIds().stream().map(item -> FieldValue.of(item)).collect(Collectors.toList()))  // Replace with actual terms
                     ))))), FileInfoEs.class);

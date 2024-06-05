@@ -22,6 +22,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -100,6 +101,9 @@ public class FileInfoService extends ServiceImpl<FileInfoMapper, FileInfo> {
         if (null != fileMemory) {
             return FileInfo.builder().name(file.getName()).id(fileMemory.getId()).dId(fileMemory.getDId()).build();
         }
+        if ("".equals(file.getName())) {
+            return null;
+        }
         List<FileInfo> list = baseMapper.selectList(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getName, file.getName()).eq(FileInfo::getIndex, MainConstant.index));
         FileInfo fileInfo = null;
         for (FileInfo info : list) {
@@ -148,7 +152,7 @@ public class FileInfoService extends ServiceImpl<FileInfoMapper, FileInfo> {
         return dId;
     }
 
-    public void insert(File file, Long sId, Long pId) {
+    public FileInfo insert(File file, Long sId, Long pId) {
         FileInfo.FileInfoBuilder builder = FileInfo.builder().name(file.getName()).path(file.getAbsolutePath()).createTime(new Date()).index(MainConstant.index).changeTime(new Date(file.lastModified()))
                 .uId(sId).pId(pId);
         if (file.isFile()) {
@@ -165,6 +169,7 @@ public class FileInfoService extends ServiceImpl<FileInfoMapper, FileInfo> {
         FileInfo fileInfo = builder.build();
         baseMapper.insert(fileInfo);
         esService.saveEs(fileInfo);
+        return fileInfo;
     }
 
 
@@ -180,6 +185,13 @@ public class FileInfoService extends ServiceImpl<FileInfoMapper, FileInfo> {
     }
 
     public void batchSaveReturnId(List<FileInfo> files, int fd) {
+        baseMapper.batchInsert(files);
+        //TODO-asuala 2024-06-03: 添加路径id对应
+        ConcurrentHashMap<String, FileMemory> pathIdMap = (ConcurrentHashMap) InotifyLibraryUtil.fdMap.get(fd).getPathIdMap();
+        files.stream().forEach(item -> pathIdMap.put(item.getPath(), FileMemory.builder().id(item.getId()).dId(item.getDId()).build()));
+    }
+
+    public void initBatchSave(List<FileInfo> files, int fd) {
         baseMapper.batchInsert(files);
         //TODO-asuala 2024-06-03: 添加路径id对应
         ConcurrentHashMap<String, FileMemory> pathIdMap = (ConcurrentHashMap) InotifyLibraryUtil.fdMap.get(fd).getPathIdMap();
@@ -200,12 +212,13 @@ public class FileInfoService extends ServiceImpl<FileInfoMapper, FileInfo> {
 
     public void findChildFile(Long pId, int fd, List<Long> ids) {
         //TODO-asuala 2024-06-01: 找到剩下的文件
-        List<FileInfo> list = baseMapper.selectList(new LambdaQueryWrapper<FileInfo>().select(FileInfo::getId, FileInfo::getPath, FileInfo::getDir).eq(FileInfo::getPId, pId).
+        List<FileInfo> list = baseMapper.selectList(new LambdaQueryWrapper<FileInfo>().select(FileInfo::getId, FileInfo::getDId, FileInfo::getPath, FileInfo::getDir).eq(FileInfo::getPId, pId).
                 eq(FileInfo::getIndex, MainConstant.index));
         List<FileInfo> dirs = new ArrayList<>();
         List<String> childPaths = new ArrayList<>();
 
         for (FileInfo fileInfo : list) {
+            InotifyLibraryUtil.fdMap.get(fd).getPathIdMap().remove(fileInfo.getPath());
             ids.add(fileInfo.getId());
             if (fileInfo.getDir() == 1) {
                 dirs.add(fileInfo);

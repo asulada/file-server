@@ -5,16 +5,19 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import com.alibaba.fastjson2.JSON;
+import com.asuala.file.server.config.MainConstant;
 import com.asuala.file.server.es.Es8Client;
 import com.asuala.file.server.es.entity.FileInfoEs;
 import com.asuala.file.server.utils.MD5Utils;
 import com.asuala.file.server.vo.FileInfo;
 import com.asuala.file.server.vo.req.FileBatchInfoReq;
 import com.asuala.file.server.vo.req.FileInfoReq;
+import com.asuala.file.server.vo.req.RebuildReq;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +31,15 @@ public class EsLocalService implements EsService{
     @Autowired(required = false)
     private Es8Client es8Client;
 
+    @Autowired
+    private ServerService serverService;
+
+    @Override
+    public void rebuldData() throws IOException {
+        RebuildReq req = new RebuildReq();
+        req.setIndex(MainConstant.index);
+        serverService.rebuildData(req);
+    }
 
     public void saveEs(FileInfo fileInfo) {
         FileInfoEs fileInfoEs = convertEs(fileInfo);
@@ -49,7 +61,7 @@ public class EsLocalService implements EsService{
 
     public void delEs(FileInfo fileInfo, List<Long> ids) {
         es8Client.delByIds(Query.of(q -> q.terms((t -> t
-                .field("sId")
+                .field("id")
                 .terms(TermsQueryField.of(tf -> tf
                         .value(ids.stream().map(item -> FieldValue.of(item)).collect(Collectors.toList()))  // Replace with actual terms
                 ))))), FileInfoEs.class);
