@@ -47,6 +47,20 @@ public class InotifyLibraryUtil {
         }
     }
 
+    public static void removeWd(Integer fd, String path) {
+        Watch watch = fdMap.get(fd);
+        Integer key = watch.getKey(path);
+//            fdMap.get(fd).getPathIdMap().remove(path);
+        if (null != key) {
+            watch.removeWatchDir(key, path);
+        }
+    }
+
+    public static void removePathId(Integer fd, String path) {
+        Watch watch = fdMap.get(fd);
+        watch.getPathIdMap().remove(path);
+    }
+
     public interface InotifyLibrary extends Library {
         InotifyLibrary INSTANCE = (InotifyLibrary) Native.load("c", InotifyLibrary.class);
 
@@ -437,10 +451,19 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         }
 
         public void removeBidi(Integer key) {
-
             lock.writeLock().lock();
             try {
                 bidiMap.remove(key);
+                // other write operations
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        public void removeBidi(String value) {
+            lock.writeLock().lock();
+            try {
+                bidiMap.removeValue(value);
                 // other write operations
             } finally {
                 lock.writeLock().unlock();
@@ -467,7 +490,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
             for (String path : paths) {
                 addWatchDir(path);
             }
-
+            paths.clear();
             Pointer pointer = new Memory(size);
             try {
                 StringBuilder strb = new StringBuilder();
@@ -499,6 +522,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                             strb.append(MainConstant.FILESEPARATOR).append(name);
                         }
                         String filePath = strb.toString();
+                        strb.setLength(0);
                         boolean isDir = false;
                         if ((mask & Constant.IN_ISDIR) != 0) {
                             mask -= Constant.IN_ISDIR;

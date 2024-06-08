@@ -86,7 +86,7 @@ public class FileListener {
                                 } else {
                                     pId = fileMemory.getDId();
                                 }
-                                insert= fileInfoService.insert(new File(poll.getFullPath()), poll.getSId(), pId);
+                                insert = fileInfoService.insert(new File(poll.getFullPath()), poll.getSId(), pId);
                                 InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().put(poll.getFullPath(), FileMemory.builder().dId(insert.getDId()).id(insert.getId()).build());
 
                                 break;
@@ -100,7 +100,7 @@ public class FileListener {
                                 if (poll.isDir()) {
                                     fileInfoService.batchSave(InotifyLibraryUtil.findDirFile(poll.getFullPath(), poll.getSId(), poll.getFd(), pId), poll.getName(), poll.getFd());
                                 } else {
-                                    insert= fileInfoService.insert(new File(poll.getFullPath()), poll.getSId(), pId);
+                                    insert = fileInfoService.insert(new File(poll.getFullPath()), poll.getSId(), pId);
                                     InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().put(poll.getFullPath(), FileMemory.builder().dId(insert.getDId()).id(insert.getId()).build());
                                 }
                                 break;
@@ -125,6 +125,7 @@ public class FileListener {
                                 fileInfo = fileInfoService.findFileInfo(poll);
                                 if (null != fileInfo) {
                                     InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().remove(poll.getFullPath());
+
                                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
                                     esService.delEs(fileInfo);
                                     if (poll.isDir()) {
@@ -136,9 +137,12 @@ public class FileListener {
                             case Constant.IN_DELETE_SELF:
                                 fileInfo = fileInfoService.findFileInfo(poll);
                                 if (null != fileInfo) {
-                                    InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().remove(poll.getFullPath());
+                                    InotifyLibraryUtil.removePathId(poll.getFd(), poll.getFullPath());
                                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
                                     esService.delEs(fileInfo);
+                                    if (poll.isDir()) {
+                                        InotifyLibraryUtil.removeWd(poll.getFd(), poll.getFullPath());
+                                    }
                                 }
                                 break;
                             default:
