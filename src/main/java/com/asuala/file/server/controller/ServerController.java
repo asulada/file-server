@@ -1,18 +1,22 @@
 package com.asuala.file.server.controller;
 
+import cn.dev33.satoken.util.SaResult;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import com.alibaba.fastjson2.JSONObject;
 import com.asuala.file.server.es.Es8Client;
 import com.asuala.file.server.es.entity.FileInfoEs;
+import com.asuala.file.server.service.IndexService;
 import com.asuala.file.server.service.RecordService;
 import com.asuala.file.server.service.ServerService;
 import com.asuala.file.server.utils.MD5Utils;
+import com.asuala.file.server.vo.Index;
 import com.asuala.file.server.vo.req.FileBatchInfoReq;
 import com.asuala.file.server.vo.req.FileInfoReq;
 import com.asuala.file.server.vo.req.RebuildReq;
 import com.asuala.file.server.vo.req.UrlReq;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -20,10 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
@@ -182,6 +183,20 @@ public class ServerController {
             return;
         }
         serverService.rebuildData(req);
+    }
+
+    @PostMapping("addWtachEs")
+    public void addWtachEs(@RequestBody RebuildReq req) throws IOException {
+        if (StringUtils.isBlank(req.getSign())) {
+            return;
+        }
+        if (null == req.getIndex()) {
+            return;
+        }
+        if (!MD5Utils.getSaltverifyMD5(req.getIndex().toString(), salt, req.getSign())) {
+            return;
+        }
+        serverService.addWtachEs(req);
     }
 
 }

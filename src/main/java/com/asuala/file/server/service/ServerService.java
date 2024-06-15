@@ -28,4 +28,10 @@ public class ServerService {
         //TODO-asuala 2024-02-03: 重置es
         timerService.rebuildEs(req.getIndex());
     }
+
+    @Async("threadPoolTaskExecutor")
+    public void addWtachEs(RebuildReq req) throws IOException {
+        //TODO-asuala 2024-02-03: 重置es
+        timerService.addWtachEs(req.getIndex(),req.getSId());
+    }
 }

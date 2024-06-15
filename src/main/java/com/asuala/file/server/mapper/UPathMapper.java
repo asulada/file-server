@@ -18,4 +18,6 @@ public interface UPathMapper extends BaseMapper<UPath> {
     int updateByPrimaryKey(UPath record);
 
     int batchInsert(@Param("list") List<UPath> list);
+
+    int batchUpdate(@Param("list") List<UPath> list);
 }

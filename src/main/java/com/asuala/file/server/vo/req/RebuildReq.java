@@ -10,4 +10,5 @@ import lombok.Data;
 public class RebuildReq {
     private String sign;
     private Integer index;
+    private Long sId;
 }

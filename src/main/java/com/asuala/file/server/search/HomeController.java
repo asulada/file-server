@@ -14,9 +14,11 @@ import com.asuala.file.server.es.Es8Client;
 import com.asuala.file.server.es.entity.FileInfoEs;
 import com.asuala.file.server.mapper.UserMapper;
 import com.asuala.file.server.service.FileInfoService;
+import com.asuala.file.server.service.IndexService;
 import com.asuala.file.server.service.RecordService;
 import com.asuala.file.server.utils.TimeUtils;
 import com.asuala.file.server.vo.FileInfo;
+import com.asuala.file.server.vo.Index;
 import com.asuala.file.server.vo.Record;
 import com.asuala.file.server.vo.User;
 import com.asuala.file.server.vo.req.SearchReq;
@@ -48,6 +50,8 @@ import java.util.stream.Collectors;
 public class HomeController {
     private final FileInfoService fileInfoService;
     private final UserMapper userMapper;
+    private final IndexService indexService;
+
     @Autowired(required = false)
     private Es8Client es8Client;
 
@@ -131,5 +135,20 @@ public class HomeController {
     @ResponseBody
     public JSONObject openUrl() {
         return JSONObject.parseObject(urlOptions);
+    }
+
+
+    @GetMapping("hostNames")
+    @ResponseBody
+    public SaResult hostNames() {
+        return SaResult.data(indexService.list(new LambdaQueryWrapper<Index>().select(Index::getId, Index::getCpuId, Index::getHostName, Index::getSystem)));
+    }
+
+
+    @GetMapping("users")
+    @ResponseBody
+    public SaResult users() {
+        List<User> users = userMapper.selectList(new LambdaQueryWrapper<User>().select(User::getId, User::getName));
+        return SaResult.data(users);
     }
 }

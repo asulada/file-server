@@ -5,6 +5,7 @@ import com.asuala.file.server.vo.Index;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.util.Scanner;
 
 /**
@@ -28,7 +29,18 @@ public class CPUUtils {
         } else {
             cpuId = getWindowsCpuId();
         }
-        return Index.builder().cpuId(cpuId.toUpperCase().replace(" ", "")).system(os).build();
+        return Index.builder().cpuId(cpuId.toUpperCase().replace(" ", "")).hostName(getHostName()).system(os).build();
+    }
+
+    public static String getHostName() {
+        String hostName = "";
+        try {
+            InetAddress address = InetAddress.getLocalHost();
+            hostName = address.getHostName();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return hostName;
     }
 
     /**

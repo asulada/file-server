@@ -69,10 +69,6 @@ public class FileListener {
                             } else if ("4913".equals(poll.getName())) {
                                 continue;
                             }
-                        } else {
-                            if (Constant.exclude.contains(poll.getName())) {
-                                continue;
-                            }
                         }
                         FileMemory fileMemory;
                         Long pId;
@@ -133,18 +129,19 @@ public class FileListener {
                                     }
                                 }
                                 break;
-                            case Constant.IN_DELETE:
                             case Constant.IN_DELETE_SELF:
+                                InotifyLibraryUtil.removeWd(poll.getFd(), poll.getFullPath());
+                            case Constant.IN_DELETE:
                                 fileInfo = fileInfoService.findFileInfo(poll);
                                 if (null != fileInfo) {
                                     InotifyLibraryUtil.removePathId(poll.getFd(), poll.getFullPath());
                                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
                                     esService.delEs(fileInfo);
-                                    if (poll.isDir()) {
-                                        InotifyLibraryUtil.removeWd(poll.getFd(), poll.getFullPath());
-                                    }
                                 }
                                 break;
+//                            case Constant.IN_IGNORED:
+//                                InotifyLibraryUtil.removeWd(poll.getFd(), poll.getFullPath());
+//                                break;
                             default:
                                 break;
                         }

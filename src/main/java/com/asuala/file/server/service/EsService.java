@@ -10,10 +10,16 @@ import java.util.stream.Collectors;
 public interface EsService {
 
     void rebuldData() throws IOException;
-     void saveEs(FileInfo fileInfo);
+
+    void saveEs(FileInfo fileInfo);
+
     void saveEsList(List<FileInfo> fileInfos, String name);
+
     void delEs(FileInfo fileInfo);
+
     void delEs(FileInfo fileInfo, List<Long> ids);
+
+    void addWtachEs(Long sId) throws IOException;
 
     public default List<FileInfoEs> convertEsBatch(List<FileInfo> list) {
         return list.stream().map(req -> {

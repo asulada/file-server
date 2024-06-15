@@ -64,6 +64,9 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     private final UserMapper userMapper;
     private final EsService esService;
 
+    @Autowired(required = false)
+    private WatchFileService watchFileService;
+
     @Value("${watch.rebuldFlag:false}")
     private boolean rebuldFlag;
     @Value("${file.server.open}")
@@ -79,6 +82,8 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     private String exclude;
     @Value("${watch.insertSize:5000}")
     private int insertSize;
+    @Value("${watch.findThreadNum:2}")
+    private int findThreadNum;
 
     @PostConstruct
     public void init() throws Exception {
@@ -133,12 +138,28 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     }
 
     private void openWatch(Index index) throws Exception {
-        List<UPath> uPaths = uPathMapper.selectList(new LambdaQueryWrapper<UPath>().select(UPath::getPath, UPath::getIndex).eq(UPath::getIndex, index.getId()));
+        List<UPath> uPaths = uPathMapper.selectList(new LambdaQueryWrapper<UPath>().select(UPath::getPath, UPath::getIndex, UPath::getSId, UPath::getId).eq(UPath::getIndex, index.getId()));
         if (uPaths.size() == 0) {
             return;
         }
         Map<String, FileNode> fileMap = new HashMap<>();
-        uPaths.forEach(item -> fileMap.put(item.getPath(), FileNode.builder().sId(FileIdUtils.buildFileId(item.getIndex().intValue(), item.getPath())).build()));
+        List<UPath> update = new ArrayList<>();
+        for (UPath item : uPaths) {
+            if (item.getSId() == 0L) {
+                Long sId = FileIdUtils.buildFileId(item.getIndex().intValue(), item.getPath());
+                fileMap.put(item.getPath(), FileNode.builder().sId(sId).build());
+
+                item.setSId(sId);
+                update.add(item);
+
+            } else {
+                fileMap.put(item.getPath(), FileNode.builder().sId(item.getSId()).build());
+
+            }
+        }
+        if (update.size() > 0) {
+            uPathMapper.batchUpdate(update);
+        }
         if (rebuldFlag) {
             //TODO-asuala 2024-02-02: 删除表数据
             Long count = fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getIndex, MainConstant.index));
@@ -149,10 +170,10 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
                     count = fileInfoMapper.deleteLimit(MainConstant.index);
                 }
             }
-            initFileInfo(index, fileMap);
+            watchFileService.initFileInfo(index, fileMap);
 
             if (index.getSystem().contains("LINUX")) {
-                Map<Integer, List<FileInfo>> map = InotifyLibraryUtil.rebuild(fileMap);
+                Map<Integer, List<FileInfo>> map = InotifyLibraryUtil.rebuild(fileMap, findThreadNum);
                 //保存文件信息
                 for (Map.Entry<Integer, List<FileInfo>> entry : map.entrySet()) {
                     List<List<FileInfo>> split = CollectionUtil.split(entry.getValue(), insertSize);
@@ -171,41 +192,25 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
             }
             esService.rebuldData();
         } else {
-            initFileInfo(index, fileMap);
+            watchFileService.initFileInfo(index, fileMap);
 
-            for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
-                ConcurrentHashMap<String, FileMemory> pathIdMap = (ConcurrentHashMap) InotifyLibraryUtil.fdMap.get(entry.getValue().getFd()).getPathIdMap();
-                while (true) {
-                    int i = 1;
-                    Page<FileInfo> page = new Page<>(1, insertSize);
-                    Page<FileInfo> result = fileInfoMapper.selectPage(page, new LambdaQueryWrapper<FileInfo>().select(FileInfo::getId, FileInfo::getPath, FileInfo::getDId).eq(FileInfo::getUId, entry.getValue().getSId()));
-                    result.getRecords().stream().forEach(item -> pathIdMap.putIfAbsent(item.getPath(), FileMemory.builder().id(item.getId()).dId(item.getDId()).build()));
-                    if (i++ == result.getPages()) {
-                        break;
+            if (index.getSystem().contains("LINUX")) {
+                for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
+                    ConcurrentHashMap<String, FileMemory> pathIdMap = (ConcurrentHashMap) InotifyLibraryUtil.fdMap.get(entry.getValue().getFd()).getPathIdMap();
+                    while (true) {
+                        int i = 1;
+                        Page<FileInfo> page = new Page<>(1, insertSize);
+                        Page<FileInfo> result = fileInfoMapper.selectPage(page, new LambdaQueryWrapper<FileInfo>().select(FileInfo::getId, FileInfo::getPath, FileInfo::getDId).eq(FileInfo::getUId, entry.getValue().getSId()));
+                        result.getRecords().stream().forEach(item -> pathIdMap.putIfAbsent(item.getPath(), FileMemory.builder().id(item.getId()).dId(item.getDId()).build()));
+                        if (i++ == result.getPages()) {
+                            break;
+                        }
                     }
                 }
             }
         }
     }
 
-    private void initFileInfo(Index cpuId, Map<String, FileNode> fileMap) throws Exception {
-        if (cpuId.getSystem().contains("LINUX")) {
-            InotifyLibraryUtil.init(fileMap);
-        } else {
-            FileMonitor fileMonitor = FileMonitor.getInstance();
-            for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
-                fileMonitor.addFileListener(new FileChangeListener(fileInfoService, entry.getKey(), entry.getValue().getSId(), esService));
-                File file = new File(entry.getKey());
-                if (!file.exists()) {
-                    file.mkdirs();
-                }
-                fileMonitor.addWatch(file);
-
-                MainConstant.volumeNos.put(entry.getKey().substring(0, entry.getKey().indexOf(":") + 1), entry.getValue().getSId());
-            }
-
-        }
-    }
 
     private void addIndex(Index index) {
         try {
@@ -219,6 +224,7 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
             } else {
                 one.setDelFlag(0);
                 one.setUpdateTime(now);
+                one.setHostName(index.getHostName());
                 indexService.updateById(one);
             }
             index.setId(one.getId());

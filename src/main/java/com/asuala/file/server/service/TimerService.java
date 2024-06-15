@@ -56,6 +56,23 @@ public class TimerService {
         }
     }
 
+    @Timer(value = "es添加路径")
+    public void addWtachEs(int index, Long uId) throws IOException {
+//        es8Client.delQuery(Query.of(q -> q.match(m -> m.query(index).field("index"))), FileInfoEs.class);
+        //TODO-asuala 2024-02-01: es添加数据
+        int pageNum = 1;
+        while (true) {
+            Page<FileInfo> page = new Page<>(pageNum++, 10000);
+            List<FileInfo> fileInfos = fileInfoMapper.selectList(page, new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getIndex, index).eq(FileInfo::getUId, uId).orderByAsc(FileInfo::getId));
+            if (fileInfos.size() == 0) {
+                break;
+            }
+            List<FileInfoEs> listEs = fileInfos.stream().map(item -> FileInfoEs.builder().id(item.getId()).changeTime(item.getChangeTime()).index(item.getIndex()).
+                    path(item.getPath()).size(item.getSize()).name(item.getName()).suffix(item.getSuffix()).sId(item.getUId()).build()).collect(Collectors.toList());
+            es8Client.addData(listEs, false);
+        }
+    }
+
     @Timer("处理数据库重复文件")
     public void delRepearFileInfo(int index) {
         List<Map<String, String>> maps = fileInfoMapper.findNameByIndex(index);

@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * @create: 2024/06/02
  **/
 @Slf4j
-public class EsLocalService implements EsService{
+public class EsLocalService implements EsService {
 
     @Autowired(required = false)
     private Es8Client es8Client;
@@ -39,6 +39,14 @@ public class EsLocalService implements EsService{
         RebuildReq req = new RebuildReq();
         req.setIndex(MainConstant.index);
         serverService.rebuildData(req);
+    }
+
+    @Override
+    public void addWtachEs(Long sId) throws IOException {
+        RebuildReq req = new RebuildReq();
+        req.setIndex(MainConstant.index);
+        req.setSId(sId);
+        serverService.addWtachEs(req);
     }
 
     public void saveEs(FileInfo fileInfo) {

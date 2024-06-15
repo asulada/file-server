@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
 public class EsHttpServcie implements EsService {
     @Value("${file.server.http.rebuildUrl}")
     private String rebuildUrl;
+    @Value("${file.server.http.addWtachUrl}")
+    private String addWtachUrl;
     @Value("${file.server.http.addUrl}")
     private String addUrl;
     @Value("${file.server.http.delUrl}")
@@ -44,6 +47,19 @@ public class EsHttpServcie implements EsService {
             HttpUtil.post(rebuildUrl, JSON.toJSONString(req));
         } catch (Exception e) {
             log.error("发送重建数据请求失败id: {}", MainConstant.index, e);
+        }
+    }
+
+    @Override
+    public void addWtachEs(Long sId) {
+        RebuildReq req = new RebuildReq();
+        req.setIndex(MainConstant.index);
+        req.setSId(sId);
+        req.setSign(MD5Utils.getSaltMD5(String.valueOf(MainConstant.index), salt));
+        try {
+            HttpUtil.post(addWtachUrl, JSON.toJSONString(req));
+        } catch (Exception e) {
+            log.error("addWtachEs请求失败id: {} sId {}", MainConstant.index, sId, e);
         }
     }
 

@@ -44,16 +44,18 @@
                                 <el-button style="float:right" type="primary" @click="handleSearch">查询</el-button>
                             </el-col>
                         </el-form-item>
-
                         <el-form-item label="地址">
+                            <el-col :span="16">
                             <el-radio-group v-model="radio" @change="skipChange">
                                 <el-radio label="0">互联网</el-radio>
                                 <el-radio label="1">加密内网</el-radio>
                                 <el-radio label="2">内网</el-radio>
                             </el-radio-group>
-
-                            <el-button style="margin-left: 20px" type="danger" @click="clearAllCookies">退出</el-button>
-
+                            </el-col>
+                            <el-col :span="6">
+                            <el-button style="margin-left: 20px;float:right" type="danger" @click="clearAllCookies">退出</el-button>
+                            <el-button style="margin-left: 20px;float:right" type="success" @click="add">新增</el-button>
+                            </el-col>
                         </el-form-item>
                     </el-form>
                 </el-header>
@@ -132,6 +134,54 @@
     <el-button type="primary" @click="login">确 定</el-button>
   </span>
             </el-dialog>
+
+            <el-dialog
+                    title=新增
+                    :visible.sync="dialogVisibleAdd"
+                    width="30%"
+                    :before-close="handleClose"
+
+            >
+                <el-form :model="watchData" label-width="50px" @submit.native.prevent>
+                    <el-form-item label="主机">
+                        <el-select
+                                v-model="watchData.index" placeholder="主机" clearable>
+                            <el-option
+                                    v-for="item in hostNameData"
+                                    :key="item.id"
+                                    :label="item.hostName"
+                                    :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+
+                    <el-form-item label="用户">
+                        <el-select
+                                multiple
+                                v-model="watchData.uId" placeholder="用户"
+                        >
+                            <el-option
+                                    v-for="item in userData"
+                                    :key="item.id"
+                                    :label="item.name"
+                                    :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="路径">
+                        <el-input v-model="watchData.path" placeholder="路径"
+                        ></el-input>
+                    </el-form-item>
+                    <el-form-item label="主机">
+                        <el-input v-model="watchData.url" placeholder="自定义主机"
+                        ></el-input>
+                    </el-form-item>
+                </el-form>
+                <span slot="footer" class="dialog-footer">
+    <el-button @click="handleCloseAdd">取 消</el-button>
+    <el-button type="primary" @click="addWatch" :loading="addLoading">确 定</el-button>
+  </span>
+            </el-dialog>
         </div>
     </template>
 </div>
@@ -147,6 +197,12 @@
         name: "",
         password: "",
     };
+    const defualtWatch = {
+        uId: [],
+        path: "",
+        index: null,
+        url: "",
+    };
     var v1 = new Vue({
         el: "#app",
         data: function () {
@@ -155,13 +211,18 @@
                 urlObj: null,
                 listQuery: Object.assign({}, defualtListQuery),
                 loginData: Object.assign({}, defualtLogin),
+                watchData: Object.assign({}, defualtWatch),
                 tableData: [],
+                hostNameData: [],
+                userData: [],
                 total: null,
                 config_url: "",
                 skipUrl: "",
                 dialogVisible: false,
                 loading: false,
                 loginLoading: false,
+                addLoading: false,
+                dialogVisibleAdd: false,
             }
         },
         created() {
@@ -185,6 +246,10 @@
             handleClose() {
                 this.dialogVisible = false
                 this.loginData = Object.assign({}, defualtLogin)
+            },
+            handleCloseAdd() {
+                this.dialogVisibleAdd = false
+                this.watchData = Object.assign({}, defualtWatch)
             },
             skipChange(val) {
                 this.skipUrl = this.urlObj[val]
@@ -217,6 +282,11 @@
                     const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
                     document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
                 }
+            },
+            add() {
+                this.users()
+                this.hostNames()
+                this.dialogVisibleAdd = true
             },
             handleSizeChange(val) {
                 window.scrollTo(0, 0);
@@ -259,9 +329,19 @@
                     this.canScroll();
                 }
             },
+            toggleAddLoading() {
+                this.addLoading = !this.addLoading;
+                // if (this.addLoading) {
+                //     // 禁止页面滚动
+                //     this.stopScroll();
+                // } else {
+                //     // 恢复页面滚动
+                //     this.canScroll();
+                // }
+            },
             stopScroll() {
                 document.body.style.overflow = 'hidden';
-                document.addEventListener('touchmove', this.preventDefault, { passive: false });
+                document.addEventListener('touchmove', this.preventDefault, {passive: false});
             },
             canScroll() {
                 document.body.style.overflow = '';
@@ -310,6 +390,63 @@
                         this.$message.warning('获取地址失败');
                     }
 
+                })
+            },
+            hostNames() {
+                axios.get(this.config_url + "hostNames").then(res => {
+                    if (res.status === 200) {
+                        if (res.data.code === 11011 || res.data.code === 11012) {
+                            this.dialogVisible = true
+                            return
+                        }
+                        let data = res.data.data
+                        for (let i = 0; i < data.length; i++) {
+                            let item = data[i]
+                            if (!item.hostName) {
+                                item.hostName = item.cpuId + '-' + item.system
+                            }
+                        }
+                        this.hostNameData = data
+                    } else {
+                        this.$message.warning('请求失败');
+                    }
+
+                })
+            },
+            users() {
+                axios.get(this.config_url + "users").then(res => {
+                    if (res.status === 200) {
+                        if (res.data.code === 11011 || res.data.code === 11012) {
+                            this.dialogVisible = true
+                            return
+                        }
+                        let data = res.data.data
+                        this.userData = data
+                    } else {
+                        this.$message.warning('请求失败');
+                    }
+
+                })
+            },
+            addWatch() {
+                this.toggleAddLoading()
+                let url
+                if (this.watchData.url) {
+                    url = this.watchData.url + "watch/addWatch"
+                } else {
+                    url = this.config_url + "watch/addWatch"
+                }
+                axios.post(url, this.watchData).then(res => {
+                    if (res.data.code === 200) {
+                        this.$message.success('添加成功');
+                        this.dialogVisibleAdd = false
+                    } else {
+                        this.$message.error(res.data.msg);
+                    }
+                }).catch(err => {
+                    this.$message.error(err);
+                }).finally(() => {
+                    this.toggleAddLoading()
                 })
             },
         }

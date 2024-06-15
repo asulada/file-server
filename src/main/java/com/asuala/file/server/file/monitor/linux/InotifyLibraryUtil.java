@@ -181,11 +181,16 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         }
     }
 
-    public static Map<Integer, List<FileInfo>> rebuild(Map<String, FileNode> fileMap) throws InterruptedException {
+    public static Map<Integer, List<FileInfo>> rebuild(Map<String, FileNode> fileMap, int findThreadNum) throws InterruptedException {
         Map<Integer, List<FileInfo>> map = new ConcurrentHashMap<>();
 //        CopyOnWriteArrayList<FileInfo> dirFileArray = new CopyOnWriteArrayList();
 
-        ExecutorService pool = Executors.newFixedThreadPool(fileMap.size());
+        ExecutorService pool;
+        if (findThreadNum < 1) {
+            pool = Executors.newFixedThreadPool(fileMap.size());
+        } else {
+            pool = Executors.newFixedThreadPool(findThreadNum);
+        }
         List<Callable<String>> tasks = new ArrayList<>();
 
         for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
@@ -505,6 +510,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                         int wd2 = pointer.getInt(i);
                         i += 4;
                         int mask = pointer.getInt(i);
+
                         i += 4;
                         int cookie = pointer.getInt(i);
                         i += 4;
@@ -513,8 +519,10 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                         byte[] nameBytes = new byte[nameLen];
                         pointer.read(i, nameBytes, 0, nameBytes.length);
                         i += nameLen;
+                        if (mask == Constant.IN_IGNORED) {
+                            continue;
+                        }
                         String name = byteToStr(nameBytes);
-
 
                         String path = getValue(wd2);
                         strb.append(path);
@@ -529,8 +537,13 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                             isDir = true;
 
                             if (mask == Constant.IN_CREATE) {
-                                addWatchDir(filePath);
-                            } else if (mask == Constant.IN_IGNORED || mask == Constant.IN_DELETE) {
+                                if (Constant.exclude.contains(name)) {
+                                    log.debug("忽略文件夹 {}", filePath);
+                                    continue;
+                                } else {
+                                    addWatchDir(filePath);
+                                }
+                            } else if (mask == Constant.IN_DELETE) {
                                 continue;
                             }
 

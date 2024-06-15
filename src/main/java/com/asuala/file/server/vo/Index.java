@@ -34,6 +34,7 @@ public class Index {
     private Date createTime;
     private Date updateTime;
     private Integer delFlag;
+    private String hostName;
 
     @TableField(exist = false)
     private Long nextUsn;
