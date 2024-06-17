@@ -1,6 +1,7 @@
 package com.asuala.file.server.task;
 
 import com.asuala.file.server.config.MainConstant;
+import com.asuala.file.server.file.monitor.linux.InotifyLibraryUtil;
 import com.asuala.file.server.service.IndexService;
 import com.asuala.file.server.service.RecordPageService;
 import com.asuala.file.server.vo.Index;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @description:
@@ -26,5 +28,13 @@ import java.util.List;
 public class ServerTask {
 
 
+    @Scheduled(cron = "0 0 1 * * ?")
+    public void excute() {
+        Map<Integer, InotifyLibraryUtil.Watch> fdMap = InotifyLibraryUtil.fdMap;
+        log.info("监控 fd 数量 {}", fdMap.size());
+        for (Map.Entry<Integer, InotifyLibraryUtil.Watch> entry : fdMap.entrySet()) {
+            log.info(" fd {} 监控 文件夹数量 {} 缓存文件数 {}", entry.getKey(), entry.getValue().getBidiMap().size(), entry.getValue().getPathIdMap().size());
+        }
+    }
 
 }

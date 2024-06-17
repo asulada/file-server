@@ -197,9 +197,9 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
             if (index.getSystem().contains("LINUX")) {
                 for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
                     ConcurrentHashMap<String, FileMemory> pathIdMap = (ConcurrentHashMap) InotifyLibraryUtil.fdMap.get(entry.getValue().getFd()).getPathIdMap();
+                    int i = 1;
                     while (true) {
-                        int i = 1;
-                        Page<FileInfo> page = new Page<>(1, insertSize);
+                        Page<FileInfo> page = new Page<>(i, insertSize);
                         Page<FileInfo> result = fileInfoMapper.selectPage(page, new LambdaQueryWrapper<FileInfo>().select(FileInfo::getId, FileInfo::getPath, FileInfo::getDId).eq(FileInfo::getUId, entry.getValue().getSId()));
                         result.getRecords().stream().forEach(item -> pathIdMap.putIfAbsent(item.getPath(), FileMemory.builder().id(item.getId()).dId(item.getDId()).build()));
                         if (i++ == result.getPages()) {

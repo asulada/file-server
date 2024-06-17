@@ -123,7 +123,8 @@ public class HomeController {
                 .terms(TermsQueryField.of(tf -> tf
                         .value(fileIds.stream().map(item -> FieldValue.of(item)).collect(Collectors.toList()))  // Replace with actual terms
                 )))).
-                must(mustQuery -> mustQuery.matchPhrase(m -> m.query(req.getKey()).field("name").slop(6)))));
+//                must(mustQuery -> mustQuery.matchPhrase(m -> m.query(req.getKey()).field("name").slop(6)))));
+        must(mustQuery -> mustQuery.term(m -> m.field("name").value(req.getKey())))));
 //        Query query = Query.of(q -> q.match(m -> m.query(key).field("name")));
         Map<String, Object> map = es8Client.complexQueryHighlight(query, FileInfoEs.class, fields, req.getPageNum(), req.getPageSize());
         res.put("data", map);

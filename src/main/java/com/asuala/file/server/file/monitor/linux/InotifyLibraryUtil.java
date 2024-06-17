@@ -213,6 +213,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
             try {
                 List<String> dirPaths = findDir(entry.getKey());
+                int size = dirPaths.size();
                 Watch watch = new Watch(dirPaths, entry.getValue().getSId());
                 fixedThreadPool.execute(watch);
                 while (watch.getFd() == null) {
@@ -221,7 +222,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                 }
                 fdMap.put(watch.getFd(), watch);
                 entry.getValue().setFd(watch.getFd());
-                log.info("{} 监控目录数量 {}", entry.getKey(), dirPaths.size());
+                log.info("{} 监控目录数量 {}", entry.getKey(), size);
 
             } catch (Exception e) {
                 log.error("{} 添加监控目录失败", entry.getKey(), e);
