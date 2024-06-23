@@ -125,6 +125,7 @@ public class FileListener {
                                     fileInfoService.deleteByPrimaryKey(fileInfo.getId());
                                     esService.delEs(fileInfo);
                                     if (poll.isDir()) {
+                                        InotifyLibraryUtil.fdMap.get(poll.getFd()).removeBidi(poll.getFullPath());
                                         fileInfoService.clearDir(fileInfo, poll);
                                     }
                                 }
