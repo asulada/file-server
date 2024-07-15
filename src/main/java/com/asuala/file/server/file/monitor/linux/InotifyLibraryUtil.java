@@ -32,7 +32,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Slf4j
 public class InotifyLibraryUtil {
 
-    public static ExecutorService fixedThreadPool;
+    public static ThreadPoolExecutor fixedThreadPool = new ThreadPoolExecutor(
+            10, // core pool size
+            10, // maximum pool size
+            0L, TimeUnit.MILLISECONDS, // keep-alive time (set to 0 to keep threads alive indefinitely)
+            new ArrayBlockingQueue<>(100), // work queue
+            Executors.defaultThreadFactory(), // thread factory
+            new ThreadPoolExecutor.AbortPolicy() // rejection handler
+    );
 
     public static Map<Integer, Watch> fdMap = new HashMap<>();
 
@@ -209,7 +216,11 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
     }
 
     public static void init(Map<String, FileNode> fileMap) {
-        fixedThreadPool = Executors.newFixedThreadPool(fileMap.size());
+        int poolSize = fileMap.size() + fixedThreadPool.getActiveCount();
+        if (poolSize > fixedThreadPool.getCorePoolSize()) {
+            fixedThreadPool.setCorePoolSize(poolSize);
+            fixedThreadPool.setMaximumPoolSize(poolSize);
+        }
         for (Map.Entry<String, FileNode> entry : fileMap.entrySet()) {
             try {
                 List<String> dirPaths = findDir(entry.getKey());
@@ -494,7 +505,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
             fd = InotifyLibrary.INSTANCE.inotify_init();
 
             for (String path : paths) {
-                addWatchDir(path);
+                addWatchDirInit(path);
             }
             paths.clear();
             Pointer pointer = new Memory(size);
@@ -588,6 +599,12 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                     Constant.IN_MOVED_FROM | Constant.IN_MOVED_TO | Constant.IN_CREATE | Constant.IN_DELETE | Constant.IN_DELETE_SELF);
             setBidi(wd, path);
             log.info("添加监控路径: {}", path);
+        }
+
+        private void addWatchDirInit(String path) {
+            int wd = InotifyLibrary.INSTANCE.inotify_add_watch(fd, path,
+                    Constant.IN_MOVED_FROM | Constant.IN_MOVED_TO | Constant.IN_CREATE | Constant.IN_DELETE | Constant.IN_DELETE_SELF);
+            setBidi(wd, path);
         }
 
         private void removeWatchDir(int wd, String path) {
