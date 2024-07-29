@@ -34,27 +34,32 @@
                 <el-header style="height: unset">
                     <el-form :model="listQuery" class="demo-form-inline" @submit.native.prevent label-width="80px">
                         <el-form-item label="文件名">
-                            <el-col :span="18">
+                            <el-col :span="14">
 
                                 <el-input v-model="listQuery.key" placeholder="文件名" @keyup.enter.native="handleSearch"
                                           clearable></el-input>
                             </el-col>
-                            <el-col :span="4">
-
+                            <el-col :span="8">
+                                <el-button style="margin-left: 20px;float:right" type="success"
+                                           @click="getClipboardContent">粘贴
+                                </el-button>
                                 <el-button style="float:right" type="primary" @click="handleSearch">查询</el-button>
                             </el-col>
                         </el-form-item>
                         <el-form-item label="地址">
                             <el-col :span="16">
-                            <el-radio-group v-model="radio" @change="skipChange">
-                                <el-radio label="0">互联网</el-radio>
-                                <el-radio label="1">加密内网</el-radio>
-                                <el-radio label="2">内网</el-radio>
-                            </el-radio-group>
+                                <el-radio-group v-model="radio" @change="skipChange">
+                                    <el-radio label="0">互联网</el-radio>
+                                    <el-radio label="1">加密内网</el-radio>
+                                    <el-radio label="2">内网</el-radio>
+                                </el-radio-group>
                             </el-col>
                             <el-col :span="6">
-                            <el-button style="margin-left: 20px;float:right" type="danger" @click="clearAllCookies">退出</el-button>
-                            <el-button style="margin-left: 20px;float:right" type="success" @click="add">新增</el-button>
+                                <el-button style="margin-left: 20px;float:right" type="danger" @click="clearAllCookies">
+                                    退出
+                                </el-button>
+                                <el-button style="margin-left: 20px;float:right" type="success" @click="add">新增
+                                </el-button>
                             </el-col>
                         </el-form-item>
                     </el-form>
@@ -264,9 +269,19 @@
                 }
                 return '文件'
             },
-            handleSearch(val) {
+            handleSearch() {
                 this.listQuery.pageNum = 1;
                 this.getList();
+            },
+            async getClipboardContent() {
+                try {
+                    // 使用 Clipboard API 获取剪贴板内容
+                    const text = await navigator.clipboard.readText();
+                    this.listQuery.key = text
+                    this.handleSearch()
+                } catch (err) {
+                    console.error('Failed to read clipboard contents: ', err);
+                }
             },
             handleCurrentChange(val) {
                 window.scrollTo(0, 0);
@@ -352,6 +367,7 @@
             },
             getList() {
                 this.toggleLoading()
+                this.listQuery.key = this.listQuery.key.length > 10 ? this.listQuery.key.slice(0, 10) : this.listQuery.key
                 axios.post(this.config_url + "search", this.listQuery).then(res => {
                     this.toggleLoading()
                     if (res.data.code === 11011 || res.data.code === 11012) {
