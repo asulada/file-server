@@ -15,9 +15,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -38,14 +36,17 @@ public class FileListener {
 
     public static ExecutorService fixedThreadPool;
     //.swp .swx
-    private static final List<String> excludeFile = new ArrayList<String>() {{
-        add(".swp");
-        add(".swx");
-    }};
+    private static Set<String> excludeFile = new HashSet<>();
 
+    @Value("${watch.excludeFileSuff}")
+    private String excludeFileSuff;
 
     @PostConstruct
     public void consumer() {
+        String[] split = excludeFileSuff.split(",");
+        for (String s : split) {
+            excludeFile.add(s);
+        }
         fixedThreadPool = Executors.newFixedThreadPool(1);
         fixedThreadPool.execute(() -> {
             while (CacheUtils.watchFlag) {

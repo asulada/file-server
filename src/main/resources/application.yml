@@ -11,7 +11,7 @@ spring:
       max-file-size: 1024MB
       max-request-size: 1024MB
   datasource:
-    url: ${env.jdbc.url}/video1?useSSL=false&rewriteBatchedStatements=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF8
+    url: ${env.jdbc.url}/video?useSSL=false&rewriteBatchedStatements=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF8
     username: ${env.jdbc.username}
     password: ${env.jdbc.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -86,11 +86,12 @@ search:
   urlOptions: ${env.search.urlOptions}
 
 watch:
-  open: true
+  open: false
   rebuldFlag: false
   insertSize: 5000
   deleteLimit: 2000000
   exclude: node_modules
+  excludeFileSuff: .log,.torrent,.llc,.swp,.swx
 
 es:
   port: ${env.es.port}
