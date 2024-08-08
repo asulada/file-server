@@ -35,18 +35,10 @@ public class FileListener {
     private final FileInfoService fileInfoService;
 
     public static ExecutorService fixedThreadPool;
-    //.swp .swx
-    private static Set<String> excludeFile = new HashSet<>();
 
-    @Value("${watch.excludeFileSuff}")
-    private String excludeFileSuff;
 
     @PostConstruct
     public void consumer() {
-        String[] split = excludeFileSuff.split(",");
-        for (String s : split) {
-            excludeFile.add(s);
-        }
         fixedThreadPool = Executors.newFixedThreadPool(1);
         fixedThreadPool.execute(() -> {
             while (CacheUtils.watchFlag) {
@@ -58,19 +50,19 @@ public class FileListener {
                         int mask = poll.getCode();
                         boolean isDir = poll.isDir();
 
-                        if (!isDir) {
-                            if (poll.getName().endsWith("~")) {
-                                continue;
-                            }
-                            if (poll.getName().contains(".")) {
-                                String suffix = poll.getName().substring(poll.getName().lastIndexOf("."));
-                                if (excludeFile.contains(suffix)) {
-                                    continue;
-                                }
-                            } else if ("4913".equals(poll.getName())) {
-                                continue;
-                            }
-                        }
+//                        if (!isDir) {
+//                            if (poll.getName().endsWith("~")) {
+//                                continue;
+//                            }
+//                            if (poll.getName().contains(".")) {
+//                                String suffix = poll.getName().substring(poll.getName().lastIndexOf("."));
+//                                if (Constant.excludeFile.contains(suffix)) {
+//                                    continue;
+//                                }
+//                            } else if ("4913".equals(poll.getName())) {
+//                                continue;
+//                            }
+//                        }
                         FileMemory fileMemory;
                         Long pId;
                         FileInfo fileInfo;

@@ -301,7 +301,9 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                 // 获取文件修改时间
                 // 获取文件大小
                 String fileName = file.getFileName().toString();
-
+                if (ignoreFile(fileName)) {
+                    return FileVisitResult.CONTINUE;
+                }
                 String suffix = FileUtils.getSuffix(fileName);
 //                if (suffix.length() > 20) {
 //                    log.warn("文件后缀名过长: {}", file.toString());
@@ -371,7 +373,9 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                 // 获取文件修改时间
                 // 获取文件大小
                 String fileName = file.getFileName().toString();
-
+                if (ignoreFile(fileName)) {
+                    return FileVisitResult.CONTINUE;
+                }
                 String suffix = FileUtils.getSuffix(fileName);
 //
                 Long pId = map.get(file.getParent().toString());
@@ -544,6 +548,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                         String filePath = strb.toString();
                         strb.setLength(0);
                         boolean isDir = false;
+                        //文件夹
                         if ((mask & Constant.IN_ISDIR) != 0) {
                             mask -= Constant.IN_ISDIR;
                             isDir = true;
@@ -559,6 +564,9 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
                                 continue;
                             }
 
+                        } else if (ignoreFile(name)) {
+                            //文件
+                            continue;
                         }
                         event = eventNameMap.get(mask);
 
@@ -612,6 +620,23 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
             log.info("移除监控路径: {}", path);
             removeBidi(wd);
         }
+    }
+
+    private static boolean ignoreFile(String name) {
+        if (name.endsWith("~")) {
+            return true;
+        } else {
+            int index = name.lastIndexOf(".");
+            if (index != -1) {
+                String suffix = name.substring(index);
+                if (Constant.excludeFile.contains(suffix)) {
+                    return true;
+                }
+            } else if ("4913".equals(name)) {//linux安全监测临时文件
+                return true;
+            }
+        }
+        return false;
     }
 
 

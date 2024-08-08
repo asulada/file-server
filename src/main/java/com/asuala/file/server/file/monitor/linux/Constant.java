@@ -28,4 +28,7 @@ public class Constant {
 
     public static Set<String> exclude = new HashSet<>();
 
+    //.swp .swx
+    public static Set<String> excludeFile = new HashSet<>();
+
 }

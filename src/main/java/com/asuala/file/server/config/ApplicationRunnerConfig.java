@@ -78,8 +78,6 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
     private int deleteLimit;
     @Value("${watch.open}")
     private boolean watchOpen;
-    @Value("${watch.exclude}")
-    private String exclude;
     @Value("${watch.insertSize:5000}")
     private int insertSize;
     @Value("${watch.findThreadNum:2}")
@@ -87,15 +85,8 @@ public class ApplicationRunnerConfig implements ApplicationRunner {
 
     @PostConstruct
     public void init() throws Exception {
-        String[] split = exclude.split(",");
-        for (String s : split) {
-            if (StringUtils.isNotBlank(s)) {
-                Constant.exclude.add(s);
-            }
-        }
         Index index = CPUUtils.getCpuId();
         MainConstant.systemInfo = index;
-        log.info("忽略文件夹 {} 数量 {}", exclude, Constant.exclude.size());
     }
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
