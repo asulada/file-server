@@ -14,19 +14,21 @@
         -->
 
         <!-- 忽略Elasticsearch客户端包的DEBUG日志 -->
-<!--        <Logger name="org.elasticsearch.client" level="WARN" additivity="false">-->
-<!--            <AppenderRef ref="debugFile"/>-->
-<!--        </Logger>-->
-<!--        <Logger name="org.apache.http" level="WARN" additivity="false">-->
-<!--            <AppenderRef ref="debugFile"/>-->
-<!--        </Logger>-->
+        <!--        <Logger name="org.elasticsearch.client" level="WARN" additivity="false">-->
+        <!--            <AppenderRef ref="debugFile"/>-->
+        <!--        </Logger>-->
+        <!--        <Logger name="org.apache.http" level="WARN" additivity="false">-->
+        <!--            <AppenderRef ref="debugFile"/>-->
+        <!--        </Logger>-->
+
+        <logger name="org.apache.catalina.core.ContainerBase" level="OFF" additivity="false"></logger>
 
         <root level="debug">
-            <appender-ref ref="spring6log" />
-<!--            <appender-ref ref="infoFile" level="info" />-->
-            <appender-ref ref="errorFile" level="error" />
-            <appender-ref ref="debugFile" level="debug" />
-<!--            <appender-ref ref="log"/>-->
+            <appender-ref ref="spring6log"/>
+            <!--            <appender-ref ref="infoFile" level="info" />-->
+            <appender-ref ref="errorFile" level="error"/>
+            <appender-ref ref="debugFile" level="debug"/>
+            <!--            <appender-ref ref="log"/>-->
         </root>
     </loggers>
 
@@ -38,9 +40,9 @@
         </console>
 
         <!--文件会打印出所有信息，这个log每次运行程序会自动清空，由append属性决定，适合临时测试用-->
-<!--        <File name="log" fileName="logs\test.log" append="false">-->
-<!--            <PatternLayout pattern="%d{HH-mm-ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n"/>-->
-<!--        </File>-->
+        <!--        <File name="log" fileName="logs\test.log" append="false">-->
+        <!--            <PatternLayout pattern="%d{HH-mm-ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n"/>-->
+        <!--        </File>-->
 
         <!--
             这个会打印出所有的信息，

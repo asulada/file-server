@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import com.alibaba.fastjson2.JSONObject;
@@ -97,7 +98,7 @@ public class HomeController {
         JSONObject res = new JSONObject();
         res.put("code", 222);
 
-        if (StringUtils.isBlank(req.getKey())) {
+        if (CollectionUtils.isEmpty(req.getKey())) {
             res.put("msg", "关键字为空");
             return res;
         }
@@ -106,27 +107,53 @@ public class HomeController {
             res.put("msg", "没有权限");
             return res;
         }
-        Page<FileInfo> page = new Page<>(req.getPageNum(), req.getPageSize());
-        List<FileInfo> list = fileInfoService.list(page, new LambdaQueryWrapper<FileInfo>().in(FileInfo::getUId, fileIds).likeRight(FileInfo::getName, req.getKey()).orderByDesc(FileInfo::getChangeTime));
-        if (list.size() > 0) {
-            Map<String, Object> result = new HashMap<>();
-            result.put("list", list);
-            result.put("total", page.getTotal());
-            res.put("data", result);
-            res.put("code", 200);
-            return res;
-        }
+//        Page<FileInfo> page = new Page<>(req.getPageNum(), req.getPageSize());
+//        List<FileInfo> list = fileInfoService.list(page, new LambdaQueryWrapper<FileInfo>().in(FileInfo::getUId, fileIds).likeRight(FileInfo::getName, req.getKey()).orderByDesc(FileInfo::getChangeTime));
+//        if (list.size() > 0) {
+//            Map<String, Object> result = new HashMap<>();
+//            result.put("list", list);
+//            result.put("total", page.getTotal());
+//            res.put("data", result);
+//            res.put("code", 200);
+//            return res;
+//        }
 //        Query query = Query.of(q -> q.wildcard(w -> w.field("name").value(key)));
 //        Query query = Query.of(q -> q.matchPhrase(m -> m.query(req.getKey()).field("name").slop(6)));
-        Query query = Query.of(q -> q.bool(b -> b.must(mustQuery -> mustQuery.terms(t -> t
+//        Query query = Query.of(q -> q.bool(b -> b.must(mustQuery -> mustQuery.terms(t -> t
+//                .field("sId")
+//                .terms(TermsQueryField.of(tf -> tf
+//                        .value(fileIds.stream().map(item -> FieldValue.of(item)).collect(Collectors.toList()))  // Replace with actual terms
+//                )))).
+//        must(mustQuery -> mustQuery.term(m -> m.field("name").value(req.getKey())))));
+        //                must(mustQuery -> mustQuery.matchPhrase(m -> m.query(req.getKey()).field("name").slop(6)))));
+        // 构建 must 子句，用于 fileIds 的 terms 查询
+        Query fileIdsQuery = Query.of(q -> q.terms(t -> t
                 .field("sId")
                 .terms(TermsQueryField.of(tf -> tf
-                        .value(fileIds.stream().map(item -> FieldValue.of(item)).collect(Collectors.toList()))  // Replace with actual terms
-                )))).
-//                must(mustQuery -> mustQuery.matchPhrase(m -> m.query(req.getKey()).field("name").slop(6)))));
-        must(mustQuery -> mustQuery.term(m -> m.field("name").value(req.getKey())))));
+                        .value(fileIds.stream()
+                                .map(FieldValue::of)
+                                .collect(Collectors.toList()))
+                ))
+        ));
+        // 构建 must 子句，用于每个 fieldValue 的 term 查询
+        List<Query> fieldValueQueries = req.getKey().stream()
+                .map(value -> Query.of(q -> q.term(t -> t
+                        .field("name")
+                        .value(value)
+                )))
+                .collect(Collectors.toList());
+        List<Query> mustQueries = fieldValueQueries;
+        mustQueries.add(fileIdsQuery);
+
+        // 构建 Bool 查询
+        Query query = Query.of(q -> q.bool(b -> b
+                .must(mustQueries)
+        ));
+//        must(mustQuery -> mustQuery.terms(m -> m.field("name")
+//        .terms(TermsQueryField.of(t -> t.value(req.getKey().stream().filter(k -> StringUtils.isNotBlank(k)).map(k -> FieldValue.of(k))
+//                .collect(Collectors.toList()))))))));
 //        Query query = Query.of(q -> q.match(m -> m.query(key).field("name")));
-        Map<String, Object> map = es8Client.complexQueryHighlight(query, FileInfoEs.class, fields, req.getPageNum(), req.getPageSize());
+        Map<String, Object> map = es8Client.complexQueryHighlight(query, FileInfoEs.class, fields, req.getPageNum(), req.getPageSize(), "changeTime", SortOrder.Desc);
         res.put("data", map);
         res.put("code", 200);
         return res;

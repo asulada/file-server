@@ -69,6 +69,7 @@ public class FileListener {
                         FileInfo insert;
                         switch (mask) {
                             case Constant.IN_CREATE:
+                                log.debug("文件删除 {}",poll.getFullPath());
                                 fileMemory = InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().get(poll.getParentPath());
                                 if (null == fileMemory) {
                                     pId = fileInfoService.findFileInfo(new File(poll.getParentPath())).getDId();
@@ -80,6 +81,7 @@ public class FileListener {
 
                                 break;
                             case Constant.IN_MOVED_TO:
+                                log.debug("文件移入 {}",poll.getFullPath());
                                 fileMemory = InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().get(poll.getParentPath());
                                 if (null == fileMemory) {
                                     pId = fileInfoService.findFileInfo(new File(poll.getParentPath())).getDId();
@@ -94,6 +96,7 @@ public class FileListener {
                                 }
                                 break;
                             case Constant.IN_MODIFY:
+                                log.debug("文件修改 {}",poll.getFullPath());
                                 if (!isDir) {
                                     fileInfo = fileInfoService.findFileInfo(poll);
                                     if (null == fileInfo) {
@@ -111,6 +114,7 @@ public class FileListener {
                                 }
                                 break;
                             case Constant.IN_MOVED_FROM:
+                                log.debug("文件移出 {}",poll.getFullPath());
                                 fileInfo = fileInfoService.findFileInfo(poll);
                                 if (null != fileInfo) {
                                     InotifyLibraryUtil.fdMap.get(poll.getFd()).getPathIdMap().remove(poll.getFullPath());
@@ -124,8 +128,10 @@ public class FileListener {
                                 }
                                 break;
                             case Constant.IN_DELETE_SELF:
+                                log.debug("自我删除 {}",poll.getFullPath());
                                 InotifyLibraryUtil.removeWd(poll.getFd(), poll.getFullPath());
                             case Constant.IN_DELETE:
+                                log.debug("删除 {}",poll.getFullPath());
                                 fileInfo = fileInfoService.findFileInfo(poll);
                                 if (null != fileInfo) {
                                     InotifyLibraryUtil.removePathId(poll.getFd(), poll.getFullPath());

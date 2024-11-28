@@ -3,6 +3,7 @@ package com.asuala.file.server.es;
 import cn.hutool.core.util.IdUtil;
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
@@ -19,6 +20,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import co.elastic.clients.util.ObjectBuilder;
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONWriter;
 import com.asuala.file.server.es.annotation.DocId;
@@ -323,7 +325,7 @@ public class Es8Client {
             UpdateRequest.Builder<FileInfoEs, Object> builder = new UpdateRequest.Builder<>();
             builder.index(getClassAlias(o.getClass()));
             builder.id(String.valueOf(id));
-            builder.doc(o);
+            builder.doc(filterNullFields(o));
             builder.upsert((FileInfoEs) o);
             if (async) {
                 asyncClient.update(builder.build(), FileInfoEs.class);
@@ -337,11 +339,81 @@ public class Es8Client {
         return response.id();
     }
 
+    public static <T> Map<String, Object> filterNullFields(T object) {
+        Map<String, Object> map = new HashMap<>();
+        for (Field field : object.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(object);
+                if (value != null) {
+                    map.put(field.getName(), value);
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return map;
+    }
+
+
     //查询指定文档id数据是否存在
     public <T> boolean docIdexists(Class<T> tClass, String id) throws IOException {
         return client.exists(s -> s.index(getClassAlias(tClass)).id(id)).value();
     }
 
+    public <T> void update(List<T> list, boolean async) {
+        BulkRequest.Builder br = new BulkRequest.Builder();
+        for (T o : list) {
+            Object id = null;
+
+            // 获取文档ID
+            for (Field declaredField : o.getClass().getDeclaredFields()) {
+                declaredField.setAccessible(true);
+                DocId annotation = declaredField.getAnnotation(DocId.class);
+                if (annotation != null) {
+                    try {
+                        id = declaredField.get(o);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            // 如果没有ID, 创建一个UUID
+            if (id == null) {
+                id = IdUtil.simpleUUID();
+            }
+            // 构建批量更新操作
+            Object finalId = id;
+            br.operations(op ->
+                    op.update(
+                            idx -> idx.index(getClassAlias(o.getClass()))
+                                    .id(String.valueOf(finalId)).action(a -> a.doc(filterNullFields(o)))
+                    )
+            );
+        }
+// 执行批量更新
+        if (async) {
+            asyncClient.bulk(br.build());
+            return;
+        }
+        BulkResponse result = null;
+        try {
+            result = client.bulk(br.build());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        // Log errors, if any
+        assert result != null;
+        if (result.errors()) {
+            log.error("Bulk had errors");
+            for (BulkResponseItem item : result.items()) {
+                if (item.error() != null) {
+                    log.error(item.error().reason());
+                }
+            }
+        }
+    }
 
     // 批量添加
     public <T> void addData(List<T> list, boolean async) {
@@ -434,7 +506,8 @@ public class Es8Client {
         return response.aggregations().get("aggregations");
     }
 
-    public <T> Map<String, Object> complexQueryHighlight(Query query, Class<T> clazz, List<String> fields, int pageNum, int pageSize) throws IOException {
+
+    public <T> Map<String, Object> complexQueryHighlight(Query query, Class<T> clazz, List<String> fields, int pageNum, int pageSize, String sortName, SortOrder order) throws IOException {
 
 
         String index = getClassAlalsOrIndex(clazz);
@@ -453,6 +526,7 @@ public class Es8Client {
                         .query(query)
                         .highlight(of)
                         .size(pageSize)
+                        .sort(sort -> sort.field(f -> f.field(sortName).order(order)))
                         .from((pageNum - 1) * pageSize)
                 , clazz
         );
@@ -467,6 +541,52 @@ public class Es8Client {
         Map<String, Object> result = new HashMap<>();
         result.put("list", list);
         result.put("total", response.hits().total().value());
+        return result;
+    }
+
+    public <T> Map<String, Object> complexQueryHighlight(Query query, Class<T> clazz, List<String> fields, String sortKey, SortOrder sortOrder, List<String> sortInfo, int pageSize) throws IOException {
+
+
+        String index = getClassAlalsOrIndex(clazz);
+        Highlight of = Highlight.of(h -> {
+                    for (String field : fields) {
+                        h.fields(
+                                field
+                                ,
+                                h1 -> h1.preTags("<font color='red'>").postTags("</font>"));
+                    }
+                    return h;
+                }
+        );
+        SearchResponse<T> response = client.search(s -> {
+                    SearchRequest.Builder builder = s
+                            .index(index)
+                            .query(query)
+                            .highlight(of)
+                            .size(pageSize)
+//                        .from((pageNum - 1) * pageSize)
+                            .sort(sort -> sort.field(f -> f.field(sortKey).order(sortOrder)));
+                    if (sortInfo != null) {
+                        builder.searchAfter(sortInfo);
+                    }
+                    return builder;
+                }
+                , clazz
+        );
+
+        List<Object> list = new ArrayList<>();
+
+        for (Hit<T> hit : response.hits().hits()) {
+            FileInfoEs source = ((FileInfoEs) hit.source());
+            source.setName(hit.highlight().get("name").get(0));
+            list.add(source);
+        }
+        List<String> sort = response.hits().hits().get(response.hits().hits().size() - 1).sort();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", list);
+        result.put("total", response.hits().total().value());
+        result.put("sort", sort);
         return result;
     }
 

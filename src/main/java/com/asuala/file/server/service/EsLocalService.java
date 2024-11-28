@@ -59,7 +59,12 @@ public class EsLocalService implements EsService {
     public void saveEsList(List<FileInfo> fileInfos, String name) {
         List<FileInfoEs> fileInfoEs = convertEsBatch(fileInfos);
         es8Client.addData(fileInfoEs, true);
+    }
 
+    @Override
+    public void updateEsList(List<FileInfo> fileInfos, String name) {
+        List<FileInfoEs> fileInfoEs = convertEsBatch(fileInfos);
+        es8Client.update(fileInfoEs, true);
     }
 
     public void delEs(FileInfo fileInfo) {

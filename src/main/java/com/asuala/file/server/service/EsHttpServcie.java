@@ -107,6 +107,11 @@ public class EsHttpServcie implements EsService {
         }
     }
 
+    @Override
+    public void updateEsList(List<FileInfo> fileInfos, String name) {
+
+    }
+
     public void delEs(FileInfo fileInfo) {
 
         FileInfoReq req = new FileInfoReq();

@@ -43,9 +43,9 @@ public class GlobalExceptionHandler {
         return SaResult.error("服务器繁忙，请稍后重试...");
     }
 
-    @ExceptionHandler(NotLoginException.class)
-    public SaResult handlerCheckException(NotLoginException e) {
-        log.error("校验token失败 {} {}", e.getCode(), e.getMessage());
-        return SaResult.code(11011);
-    }
+//    @ExceptionHandler(NotLoginException.class)
+//    public SaResult handlerCheckException(NotLoginException e) {
+//        log.error("校验token失败 {} {}", e.getCode(), e.getMessage());
+//        return SaResult.code(11011);
+//    }
 }

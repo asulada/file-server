@@ -62,6 +62,14 @@
                                 </el-button>
                             </el-col>
                         </el-form-item>
+                        <el-form-item label="文本分割">
+                            <el-input-number size="mini" v-model="keyNum" :min="1" :max="10" label="关键词数"></el-input-number>
+
+                            <el-radio v-model="splitFlag" :label="false">否</el-radio>
+                            <el-radio v-model="splitFlag" :label="true">是</el-radio>
+
+                            <span style="margin-left: 20px">{{listQuery.searchText}}</span>
+                        </el-form-item>
                     </el-form>
                 </el-header>
                 <el-main>
@@ -193,10 +201,12 @@
 </body>
 
 <script type="text/javascript">
+    // const replaceArr = ["人人社区", "磁链种子", "最新合集", "欧美", "最新", "地址"];
     const defualtListQuery = {
         pageNum: 1,
         pageSize: 10,
         key: null,
+        searchText: null
     };
     const defualtLogin = {
         name: "",
@@ -214,6 +224,7 @@
             return {
                 radio: "0",
                 urlObj: null,
+                splitFlag: true,
                 listQuery: Object.assign({}, defualtListQuery),
                 loginData: Object.assign({}, defualtLogin),
                 watchData: Object.assign({}, defualtWatch),
@@ -221,6 +232,7 @@
                 hostNameData: [],
                 userData: [],
                 total: null,
+                keyNum: 2,
                 config_url: "",
                 skipUrl: "",
                 dialogVisible: false,
@@ -365,32 +377,73 @@
             preventDefault(e) {
                 e.preventDefault();
             },
-            getList() {
+            splitBySymbols(text) {
+                const pattern = /[^\p{L}\p{N}]+/gu;
+                const cleanParts = text.split(pattern).filter((part) => part);
+                return cleanParts;
+            },
+            getLongestTwoStrings(stringList) {
+                const sortedStrings = stringList.sort((a, b) => b.length - a.length);
+                return sortedStrings.slice(0, this.keyNum);
+            },
+            async getList() {
+                let arr = []
+                let searchText = this.listQuery.key.toLowerCase()
                 this.toggleLoading()
-                this.listQuery.key = this.listQuery.key.length > 10 ? this.listQuery.key.slice(0, 10) : this.listQuery.key
-                axios.post(this.config_url + "search", this.listQuery).then(res => {
-                    this.toggleLoading()
-                    if (res.data.code === 11011 || res.data.code === 11012) {
-                        this.dialogVisible = true
-                        return
-                    }
-                    if (res.data.code === 200) {
-                        this.tableData = []
-                        let data = res.data.data
-                        this.total = data.total
-                        for (let i = 0; i < data.list.length; i++) {
-                            let size = data.list[i].size
-                            if (size > 0) {
-                                data.list[i].size = this.formatFileSize(data.list[i].size)
-                            }
-                            data.list[i].dir = this.formatType(data.list[i].dir)
-
-                            this.tableData = data.list
+                if (this.splitFlag) {
+                    arr = this.getLongestTwoStrings(this.splitBySymbols(searchText));
+                } else {
+                    // this.listQuery.key = this.listQuery.key.length > 10 ? this.listQuery.key.slice(0, 10) : this.listQuery.key
+                    arr.push(this.listQuery.key)
+                }
+                let tmpSearch = ''
+                for (let i = 0; i < arr.length; i++) {
+                    arr[i] = arr[i].length > 10 ? arr[i].slice(0, 10) : arr[i]
+                    tmpSearch = tmpSearch === '' ? arr[i] : tmpSearch + "、" + arr[i]
+                }
+                this.listQuery.searchText = tmpSearch
+                let promise = new Promise((resolve, reject) => {
+                    axios.post(this.config_url + "search", {
+                        pageNum: this.listQuery.pageNum,
+                        pageSize: this.listQuery.pageSize,
+                        key: arr
+                    }).then(res => {
+                        if (res.data.code === 11011 || res.data.code === 11012) {
+                            this.dialogVisible = true
+                            reject(res.data.msg)
+                            return
                         }
-                    } else {
-                        this.$message.warning(res.data.msg);
-                    }
+                        if (res.data.code === 200) {
+                            this.tableData = []
+                            let data = res.data.data
+                            this.total = data.total
+                            for (let i = 0; i < data.list.length; i++) {
+                                let size = data.list[i].size
+                                if (size > 0) {
+                                    data.list[i].size = this.formatFileSize(data.list[i].size)
+                                }
+                                data.list[i].dir = this.formatType(data.list[i].dir)
+
+                                this.tableData = data.list
+                            }
+                            resolve()
+                            // if (data.list.length > 0) {
+                            //     resolve(true)
+                            // } else {
+                            //     resolve(false)
+                            // }
+                        } else {
+                            this.$message.warning(res.data.msg);
+                            reject(res.data.msg)
+                        }
+                    }).catch(e => reject(e))
                 })
+                // let listEnd = await promise
+                await promise
+                // if (listEnd) {
+                //     break
+                // }
+                this.toggleLoading()
             },
             getUrlOptions() {
                 axios.get(this.config_url + "openUrl").then(res => {

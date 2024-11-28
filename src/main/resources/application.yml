@@ -74,7 +74,7 @@ logging:
 
 file:
   server:
-    open: true
+    open: false
     http:
       salt: ${env.down.http.salt}
       addUrl: ${env.down.http.url}/saveEs

@@ -14,6 +14,7 @@ public interface EsService {
     void saveEs(FileInfo fileInfo);
 
     void saveEsList(List<FileInfo> fileInfos, String name);
+    void updateEsList(List<FileInfo> fileInfos, String name);
 
     void delEs(FileInfo fileInfo);
 
