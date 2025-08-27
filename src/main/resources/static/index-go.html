@@ -22,6 +22,9 @@
             padding: 0;
         }
 
+        input[aria-hidden=true] {
+            display: none !important;
+        }
     </style>
 
 </head>
@@ -64,7 +67,7 @@
                         </el-form-item>
                         <el-form-item label="文本分割">
                             <el-input-number size="mini" v-model="keyNum" :min="1" :max="10"
-                                             label="关键词数"></el-input-number>
+                                             label="关键词数" @change="keyNumChange"></el-input-number>
 
                             <el-radio v-model="splitFlag" :label="false">否</el-radio>
                             <el-radio v-model="splitFlag" :label="true">是</el-radio>
@@ -74,9 +77,18 @@
                     </el-form>
                 </el-header>
                 <el-main>
+                    <el-button @click="handleCompare">对比</el-button>
+
                     <el-table
+                            ref="multipleTable"
+                            tooltip-effect="dark"
                             :data="tableData"
+                            @selection-change="handleSelectionChange"
                             style="width: 100%">
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
                         <el-table-column
                                 prop="name"
                                 label="名称"
@@ -119,6 +131,22 @@
                                         size="small">
                                     复制地址
                                 </el-button>
+                                <span>
+                                <el-button
+                                        @click.native.prevent="createTmp(scope.row)"
+                                        type="text"
+                                        size="small">
+                                    创建文本
+                                </el-button>
+                                </span>
+                                <el-popconfirm
+                                        icon="el-icon-info"
+                                        icon-color="red"
+                                        title="确定删除吗？"
+                                        @confirm="delFile(scope.row)"
+                                >
+                                    <el-button type="text" slot="reference">删除</el-button>
+                                </el-popconfirm>
                             </template>
                         </el-table-column>
                     </el-table>
@@ -152,7 +180,7 @@
                     </el-form-item>
 
                     <el-form-item label="密码">
-                        <el-input v-model="loginData.password" show-password placeholder="密码"
+                        <el-input v-model="loginData.pwd" show-password placeholder="密码"
                                   @keyup.enter.native="login"></el-input>
                     </el-form-item>
                 </el-form>
@@ -224,7 +252,7 @@
     };
     const defualtLogin = {
         name: "",
-        password: "",
+        pwd: "",
     };
     const defualtWatch = {
         uId: [],
@@ -236,7 +264,7 @@
         el: "#app",
         data: function () {
             return {
-                radio: 0,
+                radio: localStorage.getItem("fileSwageerRadio") ? parseInt(localStorage.getItem("fileSwageerRadio")) : 0,
                 urlObj: null,
                 splitFlag: true,
                 listQuery: Object.assign({}, defualtListQuery),
@@ -246,31 +274,103 @@
                 hostNameData: [],
                 userData: [],
                 total: null,
-                keyNum: 2,
-                config_url: "",
+                keyNum: localStorage.getItem("fileSwageerKeyNum") || 2,
+                config_url: "https://filese.swagger.vip",
+                // config_url: "",
                 skipUrl: "",
                 dialogVisible: false,
                 loading: false,
                 loginLoading: false,
                 addLoading: false,
                 dialogVisibleAdd: false,
+                token: null,
+                multipleSelection: [],
+                compareResult: {}
             }
         },
         created() {
+            this.token = localStorage.getItem('fileSwageerToken')
+            if (this.token) {
+                // 设置全局 header
+                axios.defaults.headers['token'] = this.token;
+            }
             this.getUrlOptions()
         },
         methods: {
-            login() {
-                if (this.loginData.name && this.loginData.password) {
+            keyNumChange() {
+                localStorage.setItem("fileSwageerKeyNum", this.keyNum)
+            },
+            async post(url, data) {
+                let result
+                await axios.post(url, data).then(res => {
+                    if (res.status === 200 && res.data.status === 200) {
+                        result = res.data
+                    } else {
+                        this.$message.error(res.data.message);
+                    }
+                }).catch(err => {
+                    this.$message.error(err);
+                }).finally(() => {
                     this.toggleLoginLoading()
-                    axios.post(this.config_url + "login", this.loginData).then(res => {
-                        this.toggleLoginLoading()
-                        if (res.data.code === 200) {
+                })
+                return result
+            },
+            async handleCompare() {
+                if (this.multipleSelection.length != 2) {
+                    this.$message.warning("需要选择两个文件");
+                    return
+                }
+                this.toggleLoginLoading()
+
+                let path1 = this.multipleSelection[0].path
+                let path2 = this.multipleSelection[1].path
+                let key = path1 + path2
+                if (this.compareResult[key]) {
+                    this.$message.success(this.compareResult[key])
+                    return;
+                }
+                let data = await this.post(this.config_url + "/files/compare", {path1, path2})
+                debugger
+                if (data) {
+                    this.$message.success(data.data)
+                    this.compareResult[key] = data.data
+                }
+            },
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+            },
+            formatDate(ms) {
+                const date = new Date(ms);
+                let format = 'YYYY-MM-DD HH:mm:ss'
+                const map = {
+                    'YYYY': date.getFullYear(),
+                    'MM': String(date.getMonth() + 1).padStart(2, '0'),
+                    'DD': String(date.getDate()).padStart(2, '0'),
+                    'HH': String(date.getHours()).padStart(2, '0'),
+                    'mm': String(date.getMinutes()).padStart(2, '0'),
+                    'ss': String(date.getSeconds()).padStart(2, '0'),
+                    'SSS': String(date.getMilliseconds()).padStart(3, '0')
+                };
+
+                return format.replace(/YYYY|MM|DD|HH|mm|ss|SSS/g, match => map[match]);
+            },
+            login() {
+                if (this.loginData.name && this.loginData.pwd) {
+                    this.toggleLoginLoading()
+                    axios.post(this.config_url + "/files/login", this.loginData).then(res => {
+                        if (res.status === 200 && res.data.status === 200) {
+                            localStorage.setItem('fileSwageerToken', res.data.data)
+                            this.token = res.data.data
+                            axios.defaults.headers['token'] = this.token;
                             this.getUrlOptions()
                             this.handleClose()
                         } else {
-                            this.$message.error(res.data.msg);
+                            this.$message.error(res.data.message);
                         }
+                    }).catch(err => {
+                        this.$message.error(err);
+                    }).finally(() => {
+                        this.toggleLoginLoading()
                     })
                 }
             },
@@ -281,6 +381,46 @@
                 } catch (err) {
                     console.error('设置剪贴板出错: ', err);
                 }
+            },
+            createTmp(row) {
+                let name = row.nameC
+                if (!this.isDir(row)) {
+                    name = name.slice(0, name.lastIndexOf("."))
+                }
+                let url = this.config_url + "/files/create"
+                axios.post(url, {'name': name}).then(res => {
+                    if (res.data.status === 200) {
+                        this.$message.success(res.data.message);
+                    } else {
+                        this.$message.error(res.data.message);
+                    }
+                }).catch(err => {
+                    this.$message.error(err);
+                }).finally(() => {
+                })
+            },
+            delFile(row) {
+                this.toggleAddLoading()
+                let data, url
+                if (row.index !== 0) {
+                    data = {"path": row.path}
+                    url = this.config_url + "/files/delete"
+                } else {
+                    data = {"id": row.id, "esId": 't' + row.id}
+                    url = this.config_url + "/files/esDelete"
+                }
+                axios.post(url, data).then(res => {
+                    if (res.data.status === 200) {
+                        this.$message.success(res.data.message);
+                        this.dialogVisibleAdd = false
+                    } else {
+                        this.$message.error(res.data.message);
+                    }
+                }).catch(err => {
+                    this.$message.error(err);
+                }).finally(() => {
+                    this.toggleAddLoading()
+                })
             },
             handleClose() {
                 this.dialogVisible = false
@@ -296,16 +436,17 @@
                     return
                 }
                 this.skipUrl = this.urlObj[val]
+                localStorage.setItem("fileSwageerRadio", val)
             },
             skip(row) {
                 let path = row.path.replace("/mnt/", this.skipUrl)
                 window.open(path);
             },
-            formatType(type) {
-                if (type === 1) {
-                    return '文件夹'
+            isDir(row) {
+                if (!row.size || (row.dir && row.dir === 1)) {
+                    return true
                 }
-                return '文件'
+                return false
             },
             handleSearch() {
                 this.listQuery.pageNum = 1;
@@ -413,7 +554,7 @@
                 return sortedStrings.slice(0, this.keyNum);
             },
             async getList() {
-                if (!this.listQuery.key){
+                if (!this.listQuery.key) {
                     return
                 }
                 let arr = []
@@ -432,26 +573,28 @@
                 }
                 this.listQuery.searchText = tmpSearch
                 new Promise((resolve, reject) => {
-                    axios.post(this.config_url + "search", {
+                    axios.post(this.config_url + "/files/search", {
                         pageNum: this.listQuery.pageNum,
                         pageSize: this.listQuery.pageSize,
                         key: arr
                     }).then(res => {
-                        if (res.data.code === 11011 || res.data.code === 11012) {
+                        if (res.status === 401) {
                             this.dialogVisible = true
-                            reject(res.data.msg)
+                            this.$message.error(res.data.message);
+                            reject(res.data.message)
                             return
-                        }
-                        if (res.data.code === 200) {
+                        } else if (res.data.status === 200) {
                             this.tableData = []
                             let data = res.data.data
-                            this.total = data.total
+                            this.total = data.total.value
                             for (let i = 0; i < data.list.length; i++) {
                                 let size = data.list[i].size
+                                data.list[i].name = data.list[i].name.toString()
+                                data.list[i].changeTime = this.formatDate(data.list[i].changeTime)
                                 if (size > 0) {
                                     data.list[i].size = this.formatFileSize(data.list[i].size)
                                 }
-                                data.list[i].dir = this.formatType(data.list[i].dir)
+                                data.list[i].dir = this.isDir(data.list[i]) ? '文件夹' : '文件'
 
                                 this.tableData = data.list
                             }
@@ -462,10 +605,14 @@
                             //     resolve(false)
                             // }
                         } else {
-                            this.$message.warning(res.data.msg);
-                            reject(res.data.msg)
+                            this.$message.warning(res.data.message);
+                            reject(res.data.message)
                         }
-                    }).catch(e => reject(e))
+                    }).catch(e => {
+                        this.$message.error(e);
+                        this.dialogVisible = true
+                        reject(e)
+                    })
                 }).then(() => {
                     this.toggleLoading()
                 }).catch(err => {
@@ -473,28 +620,30 @@
                 })
             },
             getUrlOptions() {
-                axios.get(this.config_url + "openUrl").then(res => {
-                    if (res.status === 200) {
-                        if (res.data.code === 11011 || res.data.code === 11012) {
-                            this.dialogVisible = true
-                            return
-                        }
-                        let data = res.data
+                axios.get(this.config_url + "/files/openUrl").then(res => {
+                    if (res.status === 401) {
+                        this.dialogVisible = true
+                        return
+                    } else if (res.data.status === 200) {
+                        let data = res.data.data
                         this.urlObj = data
                         this.skipUrl = this.urlObj[this.radio]
                     } else {
                         this.$message.warning('获取地址失败');
                     }
-
+                }).catch(err => {
+                    this.$message.error(err);
+                    this.dialogVisible = true
+                }).finally(() => {
+                    // this.toggleAddLoading()
                 })
             },
             hostNames() {
-                axios.get(this.config_url + "hostNames").then(res => {
-                    if (res.status === 200) {
-                        if (res.data.code === 11011 || res.data.code === 11012) {
-                            this.dialogVisible = true
-                            return
-                        }
+                axios.get(this.config_url + "/files/hostNames").then(res => {
+                    if (res.status === 401) {
+                        this.dialogVisible = true
+                        return
+                    } else if (res.data.status === 200) {
                         let data = res.data.data
                         for (let i = 0; i < data.length; i++) {
                             let item = data[i]
@@ -510,12 +659,11 @@
                 })
             },
             users() {
-                axios.get(this.config_url + "users").then(res => {
-                    if (res.status === 200) {
-                        if (res.data.code === 11011 || res.data.code === 11012) {
-                            this.dialogVisible = true
-                            return
-                        }
+                axios.get(this.config_url + "/files/users").then(res => {
+                    if (res.status === 401) {
+                        this.dialogVisible = true
+                        return
+                    } else if (res.data.status === 200) {
                         let data = res.data.data
                         this.userData = data
                     } else {
@@ -528,16 +676,16 @@
                 this.toggleAddLoading()
                 let url
                 if (this.watchData.url) {
-                    url = this.watchData.url + "watch/addWatch"
+                    url = this.watchData.url + "/files/watch/addWatch"
                 } else {
-                    url = this.config_url + "watch/addWatch"
+                    url = this.config_url + "/files/watch/addWatch"
                 }
                 axios.post(url, this.watchData).then(res => {
-                    if (res.data.code === 200) {
+                    if (res.data.status === 200) {
                         this.$message.success('添加成功');
                         this.dialogVisibleAdd = false
                     } else {
-                        this.$message.error(res.data.msg);
+                        this.$message.error(res.data.message);
                     }
                 }).catch(err => {
                     this.$message.error(err);

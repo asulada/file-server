@@ -427,7 +427,7 @@ IN_MOVE_SELF，自移动，即一个可执行文件在执行时移动自己
         private Integer fd;
         private List<String> paths;
         private static final int size = 4096;
-        private static Long sId;
+        private Long sId;
         private BidiMap<Integer, String> bidiMap = new DualHashBidiMap<>();
         private Map<String, FileMemory> pathIdMap = new ConcurrentHashMap<>(512);
         private ReadWriteLock lock = new ReentrantReadWriteLock();

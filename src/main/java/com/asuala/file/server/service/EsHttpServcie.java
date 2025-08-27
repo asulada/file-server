@@ -80,7 +80,6 @@ public class EsHttpServcie implements EsService {
         } catch (Exception e) {
             log.error("发送es请求失败 文件id: {}", fileInfo.getId(), e);
         }
-
     }
 
     public void saveEsList(List<FileInfo> fileInfos, String name) {
